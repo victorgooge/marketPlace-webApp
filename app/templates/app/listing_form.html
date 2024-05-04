@@ -1,0 +1,42 @@
+<head>
+    <title>Create</title>
+</head>
+<style>
+    form {
+        width: 100px;
+        dipslay: flex;
+        flex-wrap: wrap;
+    }
+
+    form > * {
+        margin: 10px;
+    }
+</style>
+{% if create %}
+    <h1>Create Listing</h1>
+{% else %}
+    <h1>Edit Listing</h1>
+{% endif %}
+<div style="dipslay: flex; flex-wrap:wrap; width:300px;">
+    <form action="" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <label for={{ form.title.label }}>{{ form.title.label }}</label>
+        <div class="form-input">{{ form.title }}</div>
+
+        <label for={{ form.image.label }}>{{ form.image.label }}</label>
+        <div class="form-input">{{ form.image }}</div>
+
+        <label for={{ form.price.label }}>{{ form.price.label }}</label>
+        <div class="form-input">{{ form.price }}</div> 
+
+        <label for={{ form.caption.label }}>{{ form.caption.label }}</label>
+        <div class="form-input">{{ form.caption }}</div> 
+        
+        {% if create %}
+            <input type="submit" value="Create">
+        {% else %}
+            <input type="submit" value="Confirm">
+        {% endif %}
+    </form>
+</div>

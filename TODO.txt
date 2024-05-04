@@ -1,0 +1,13 @@
+KEY COMPONENTS:
+
+
+** BRAINSTORM SITE IDEA **
+    - Marketplace
+
+    Andre's:
+    - Dating App
+    - Insurance?
+
+SECRET_KEY = 'django-insecure-7w_*mn@8$5=rbazn9das7_)*di6k7rve-b8!d!yon_5slpkw&!'
+EMAIL_HOST_USER ='googevictor@gmail.com'
+DEFAULT_FROM_EMAIL = "App googevictor@gmail.com"

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App | Sign-Up</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            height: 3em;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            margin: 0 5px;
+            font-size: 2em;
+        }
+
+        nav a:hover {
+            text-decoration: none;
+        }
+
+        div.body-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; 
+        }
+
+        div.form-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 400px;
+            margin-top: 300px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+
+        label {
+            margin-bottom: 0;
+            color: #333;
+        }
+
+        div.form-input {
+            margin: 0px 0px 10px 0px;
+        }
+
+        div.has-requirements {
+            margin: 0;
+        }
+
+        .requirement-label {
+            margin: 0px 0px 25px 0px;
+            font-size: 14px;
+            color: #909497;
+        }
+
+        {% comment %} Password "Must:" (password requirements) {% endcomment %}
+        p#p-must {
+            margin: 5px 0px 5px 20px;
+        }
+
+        ul li {
+            margin-left: 20px;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        {% comment %} Checkbox to show password is valid. Will appear when all password reqs are checked {% endcomment %}
+        i.checkbox {
+            margin:8px 0px 0px 10px; 
+            color: #4caf50;
+            display:none;
+        }
+
+        {% comment %} Checkmarks {% endcomment %}
+        i.check {
+            display: none;
+            color: #4caf50;
+        }
+
+        {% comment %} Password confirmation text {% endcomment %}
+        p#p-confirm {
+            margin-bottom: 20px;
+        }
+
+        {% comment %} For submit button {% endcomment %}
+        input {
+            width: 99%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        input[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+        }
+        
+        input[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+
+        {% comment %} For login link at bottom {% endcomment %}
+        a {
+            text-decoration: none;
+            color: #3498db;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        p#p-footer {
+            margin: 20px 0px 50px 0px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"/>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'index' %}">App</a>
+    </nav>
+    <div class="body-container">
+        <div class="form-container">
+            <h1>Sign Up</h1>
+            <form action="" method="POST">
+                {% csrf_token %}
+                
+                <p class="requirement-label">All fields are required (*)</p>
+
+                <label for={{ form.first_name.label }}>{{ form.first_name.label }}</label>
+                <div class="form-input">{{ form.first_name }}</div> <!-- First Name -->
+
+                <label for={{ form.last_name.label }}>{{ form.last_name.label }}</label>
+                <div class="form-input">{{ form.last_name }}</div> <!-- Last Name -->
+
+                <label for={{ form.email.label }}>{{ form.email.label }}</label>
+                <div class="form-input">{{ form.email }}</div> <!-- Email Name -->
+
+                <label for={{ form.username.label }}>{{ form.username.label }}</label>
+                <div class="form-input has-requirements">{{ form.username }}</div> <!-- Username -->
+                <p class="requirement-label">50 characters or less (letters, numbers, or symbols)</p>
+
+                <label for={{ form.password1.label }}>{{ form.password1.label }}</label> <!-- Password -->
+                <div class="form-input has-requirements" style="display:flex;">{{ form.password1 }}<i class="fa-solid fa-square-check checkbox"></i></div>
+                <p id="p-must" class="requirement-label">Password must:</p>
+                <ul class="requirement-label">
+                    <li>Contain one uppercase character <i class="fa-solid fa-check check"></i></li>
+                    <li>Contain one lowercase character <i class="fa-solid fa-check check"></i></li>
+                    <li>Contain one special character (!, #, _ ) <i class="fa-solid fa-check check"></i></li>
+                    <li>Contain at least 8 characters <i class="fa-solid fa-check check"></i></li>
+                </ul>
+                
+                <label for={{ form.password2.label }}>{{ form.password2.label }}</label>
+                <div class="form-input has-requirements" style="display:flex;">{{ form.password2 }}<i class="fa-solid fa-square-check checkbox"></i></div> <!-- Password Confirmation -->
+                <p id="p-confirm" class="requirement-label">Re-type password</p>
+                {{ form.errors }}
+
+                <input type="submit" value="Submit"> <!-- Submit -->
+            </form>
+            <br>
+            <p id="p-footer">Already have an account? <a href="{% url 'login' %}">Login</a><p>
+        </div>  
+    </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const passwordInput = document.getElementById('id_password1');
+        const requirementListItems = document.querySelectorAll('li');
+        const checkMarks = document.querySelectorAll('i.check');
+        const validPasswordCheckBox = document.querySelectorAll('i.checkbox');
+
+        // Checking Password 1 Input
+        passwordInput.addEventListener('input', function () {
+            const password = passwordInput.value;
+
+            // When reset or deleted
+            requirementListItems.forEach(item => {
+                item.style.color = '';
+            });
+
+            checkMarks.forEach(item => {
+                item.style.display = '';
+            });
+
+            // Validation for all 4 Requirements
+            validPasswordCheckBox[0].style.display = ''; // Checkbox for password1
+            let r1 = false;
+            let r2 = false;
+            let r3 = false;
+            let r4 = false;
+
+            if (/[A-Z]/.test(password)) {
+                requirementListItems[0].style.color = '#4caf50';
+                checkMarks[0].style.display = 'inline'; 
+                r1 = true;
+            }
+            if (/[a-z]/.test(password)) {
+                requirementListItems[1].style.color = '#4caf50'; 
+                checkMarks[1].style.display = 'inline';
+                r2 = true;
+            }
+            if (password.includes('!') || password.includes('#') || password.includes('_')) {
+                requirementListItems[2].style.color = '#4caf50'; 
+                checkMarks[2].style.display = 'inline';
+                r3 = true;
+            }
+            if (password.length >= 8) {
+                requirementListItems[3].style.color = '#4caf50'; 
+                checkMarks[3].style.display = 'inline';
+                r4 = true;
+            }
+
+            // Valid Password
+            if (r1 && r2 && r3 && r4) {
+                validPasswordCheckBox[0].style.display = 'inline';
+            }
+        });
+
+
+        // Password Confirmation
+        const passwordConfirmInput = document.getElementById('id_password2');
+        const validPrompt = document.getElementById('p-confirm');
+
+        // Checking Password 2 Input
+        passwordConfirmInput.addEventListener('input', function() {
+            const passwordConfirmation = passwordConfirmInput.value;
+            const password = passwordInput.value;
+
+            // Checkbox for password2
+            validPasswordCheckBox[1].style.display = '';
+
+            if (passwordConfirmation || password) {
+                if (password === passwordConfirmation) {
+                    validPasswordCheckBox[1].style.display = 'inline';
+                    // Validity Prompt
+                    validPrompt.innerHTML = 'Passwords match';
+                    validPrompt.style.color = '#4caf50';
+                } else {
+                    validPrompt.innerHTML = 'Passwords do not match';
+                    validPrompt.style.color = '#D22B2B';
+                }
+            }
+        });
+    });
+</script>
+</body>
+</html>
+

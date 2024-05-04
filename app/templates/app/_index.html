@@ -1,0 +1,76 @@
+{% block content %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>App</title>
+        <style>
+            body {
+                font-family: 'Arial', sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+            }
+
+            .container {
+                text-align: center;
+                background-color: #fff;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+
+            h1 {
+                color: #333;
+            }
+
+            hr {
+                border: none;
+                height: 1px;
+                color: #D3D3D3; 
+                background-color: #D3D3D3; 
+                }
+            
+            a {
+                border: 1px solid #ccc;
+                color: white;
+                text-decoration: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                display: inline-block;
+                margin: 10px;
+                transition: background-color 0.3s, color 0.3s;
+            }
+
+            a.login {
+                background-color: #4caf50;
+            }
+
+            a.login:hover {
+                background-color: #45a049;
+            }
+
+            a.signup {
+                background-color: #3498db;
+            }
+
+            a.signup:hover {
+                background-color: #2980b9;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>App</h1>
+            <hr>
+            <a class="login" href="{% url 'login' %}">Login</a>
+            <a class="signup" href="{% url 'signup' %}">Sign-Up</a>
+        </div>
+    </body>
+    </html>
+{% endblock content %}
