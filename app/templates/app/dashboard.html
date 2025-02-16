@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | {{ user.username }}</title>
+    <style>
+        img{
+            max-width: 100%;
+            max-height: 100%;
+            display: inline;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            width: 400px;
+        }
+    
+        .user-profile img {
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%;
+            margin-right: 10px; 
+        }
+
+        #edit-prof {
+            margin: 5px 0px 0px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="user-profile">
+        <img src="{{ profile.profile_picture.url }}"><h1 id="username">{{ user.username }}</h1><a href="{% url 'profile-update' profile.pk %}" id="edit-prof">Edit Profile</a>
+        <p>{{ user.first_name }} {{ user.last_name }} | {{ profile.location }}</p>
+        <p>{{ profile.about }}</p>
+        <a href="{% url 'feed' %}">&#x2190; Explore</a>
+    </div>
+    <hr>
+    {% if user_listings %}
+        {% for listing in user_listings %}
+        <br>
+        <div style="border:black solid 1px; width:300px;" class="user_post">
+            <a href="{% url 'listing-detail' listing.pk %}" style="text-decoration:none; color:black;">
+                <h3>{{ listing.title }}</h3>
+                <hr>
+                {% if listing.image %}
+                    <img src="{{ listing.image.url }}" alt="">
+                {% endif %}
+                <p style='text-decoration:underline';><em>Asking Price: </em><strong>${{ listing.price }}</strong></p>
+                <p>{{ listing.caption }}</p>
+                <p class="listing_time" style="color:#71797E; font-size:14px;">{{ listing.timestamp }}</p>
+                <a href="{% url 'listing-update' listing.pk %}">Edit</a>
+                <a href="{% url 'listing-delete' listing.pk %}">Delete</a>
+            </a>
+        </div>
+        </a>
+        <br>
+        {% endfor %}
+        <a href="{% url 'listing-create' %}">Create</a>
+    {% else %}
+        <p>Looks like you have no listings yet... <a href="{% url 'listing-create' %}">Create</a>.</p>
+    {% endif %}
+    <a href="{% url 'logout' %}">Logout</a>
+<script></script>
+</body>
+</html>

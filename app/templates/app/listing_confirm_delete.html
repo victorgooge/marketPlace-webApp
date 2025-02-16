@@ -1,0 +1,9 @@
+<head>
+    <title>Delete</title>
+</head>
+
+<h1>Are you sure you want to delete this listing?</h1>
+<form action="{% url 'listing-delete' listing.pk %}" method="POST"> 
+    {% csrf_token %}
+    <input type="submit" value="Delete">
+</form>

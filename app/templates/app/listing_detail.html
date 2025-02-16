@@ -1,0 +1,35 @@
+<head>
+    <title>{{ listing.title }}</title>
+    <style>
+        div#profile {
+            display:flex;
+            align-items:center;
+        }
+
+        div#profile > * {
+            margin-right: 10px;
+        }
+
+        div#profile img {
+            width: 50px; 
+            height: 50px; 
+            border-radius: 50%;
+            margin: 0px 10px 0px 0px; 
+        }
+    </style>
+</head>
+<div>
+    <h1>{{ listing.title }}</h1>
+    <div id="profile">
+        <img src="{{ profile.profile_picture.url }}">
+        <p>{{ listing.owner }}</p>
+    </div>
+    <hr>
+    {% if listing.image %}
+        <img src="{{listing.image.url}}" style="width:40%">
+    {% endif %}
+    <hr>
+    <p style="text-decoration:underline;"><em>Asking Price: </em><strong>${{ listing.price }}</strong></p>
+    <p>{{ listing.caption }}</p>
+    <p style="color:#71797E; font-size:14px;">{{ listing.timestamp }}</p>
+</div>

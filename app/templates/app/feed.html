@@ -1,0 +1,58 @@
+<head>
+    <title>Explore</title>
+    <style>
+        img{
+            max-width: 100%;
+            max-height: 100%;
+            display: block; 
+        }
+
+        .listing-header {
+            display:flex;
+            align-items:center;
+            margin-left:10px;
+        }
+
+        .listing-header img {
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%;
+            margin: 15px 10px 0px 0px; 
+        }
+
+        #listing-title {
+            margin-left: 15px;
+        }
+    </style>
+</head>
+<h1>Explore</h1>
+<a href="{% url 'dashboard-home' %}">My Profile &#x2192;</a>    
+<hr>
+{% if all_listings %}
+    {% for listing in all_listings %}
+        <br>
+        <div style="border:black solid 1px; width:300px;" class="user_post">
+            {% for profile in profiles %}
+            {% if listing.owner == profile.user %}
+                <div class='listing-header'>
+                    <img src="{{ profile.profile_picture.url }}"><p>{{ listing.owner }}</p>
+                </div>
+            {% endif %}
+            {% endfor %}
+            <h3 id="listing-title">{{ listing.title }}</h3>
+            <hr>
+            {% if listing.image %}
+                <a href="{% url 'listing-detail' listing.pk %}" style="text-decoration:none; color:black;">
+                    <img src="{{ listing.image.url }}" alt="">
+                </a>
+            {% endif %}
+            <p style='text-decoration:underline';><em>Asking Price: </em><strong>${{ listing.price }}</strong></p>
+            <p>{{ listing.caption }}</p>
+            <p class="listing_time" style="color:#71797E; font-size:14px;">{{ listing.timestamp }}</p>
+        </div>
+        <br>
+        <hr>
+        <br>
+    {% endfor %}
+{% endif %}
+<a href="{% url 'logout' %}">Logout</a>

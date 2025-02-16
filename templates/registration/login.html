@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App | Login</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            height: 3em;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            margin: 0 5px;
+            font-size: 2em;
+        }
+
+        nav a:hover {
+            text-decoration: none;
+        }
+
+        div.body-container {
+            margin-top: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        div.form-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 400px;
+            
+        }
+
+        div.prompts {
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+            width: 100%;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        input#username-email {
+            margin-bottom: 40px;
+        }
+
+        p.forgot {
+            font-size: 12px;
+            margin-bottom: 30px;
+        }
+
+        input[type="submit"] {
+            background-color: #4caf50;
+            color: white;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        a {
+            text-decoration: none;
+            color: #3498db;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'index' %}">App</a>
+    </nav>
+    <div class="body-container">
+        <div class="form-container">
+            <h1>Login</h1>
+            <form action="" method="POST">
+                {% csrf_token %}
+                
+                <label for="username-email">Username / Email</label> 
+                <input type="text" id="username-email" name="username-email" autofocus required> <!-- Username/Email -->
+                <br>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required> <!-- Password -->
+                <br>
+                <p class="forgot" id="f_password">Forgot <a href="{% url 'password_reset' %}">password</a></p>
+
+                <input type="submit" value="Login">
+            </form>
+        </div>
+    </div>
+    <div class="prompts">
+        {% for message in messages %}
+            <p style="color:red; width:max;">{{message}}</p>
+        {% endfor %}
+        <p>Don't have an account? <a href="{% url 'signup' %}">Sign-Up</a><p>
+    <div>
+<script>
+    {% comment %} PLACEHOLDER {% endcomment %}
+</script>
+</body>
+</html>

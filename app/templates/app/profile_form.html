@@ -1,0 +1,38 @@
+<head>
+    <title>Edit Profile</title>
+    <style>
+        form {
+            display:flex;
+            align-items:center;
+            flex-wrap:wrap;
+            width:250px;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<div>
+    <h1>Edit Profile</h1>
+    <hr>
+    <form action="" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="section">
+            <label for={{ form.profile_picture.label }}>{{ form.profile_picture.label }}</label>
+            <div class="form-input">{{ form.profile_picture }}</div>
+        </div>
+
+        <div class="section">
+            <label for={{ form.location.label }}>{{ form.location.label }}</label>
+            <div class="form-input">{{ form.location }}</div>
+        </div>
+
+        <div class="section">
+            <label for={{ form.about.label }}>{{ form.about.label }}</label>
+            <div class="form-input">{{ form.about }}</div> 
+        </div>
+
+        <input type="submit" value="Confirm">
+</div>
