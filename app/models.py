@@ -35,3 +35,22 @@ class Listing(models.Model):
     def __str__(self):
         quarter_cap = len(self.caption) // 4 
         return f"{self.caption[0:quarter_cap]}... | {self.owner.username}"
+
+
+# Direct Messaging Models - sellers and buyer exchange
+class Thread(models.Model): # whole message thread
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+
+class Message(models.Model): # message tokens
+    thread = models.ForeignKey('Thread', on_delete=models.CASCADE, related_name='+', blank=True, null=True) # thread can be empty
+    sender_acc = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+') # user account sending message
+    receiver_acc = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+') # user account recieving message
+    messageText = models.CharField() # sender can type as much as needed
+    messageImage = models.ImageField(upload_to='message_images', blank=True, null=True) # TODO: create folder two folders in media: {threadID}/message_images
+    timestamp = models.DateTimeField(default=timezone.now)
+    delivered = models.BooleanField(default=False)
+    read = models.BooleanField(default=False)
+    
+    
+
