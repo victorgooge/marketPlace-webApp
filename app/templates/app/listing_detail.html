@@ -16,6 +16,10 @@
             border-radius: 50%;
             margin: 0px 10px 0px 0px; 
         }
+
+        div#popup {
+            margin-top: 50px;
+        }
     </style>
 </head>
 <div>
@@ -32,5 +36,19 @@
     <p style="text-decoration:underline;"><em>Asking Price: </em><strong>${{ listing.price }}</strong></p>
     <p>{{ listing.caption }}</p>
     <p style="color:#71797E; font-size:14px;">{{ listing.timestamp }}</p>
-    <button>Message Seller</button>
-</div>
+    <button onclick="showFrame()">Message Seller</button>
+    <div id="popup"><div></div>
+<script>
+    const showFrame = async () => {
+        const frame = document.getElementById("popup");
+        try {
+            const response = await fetch("update"); // Ensure file exists in the correct path
+            const html = await response.text();
+            
+            frame.innerHTML = html;
+            frame.style.border = "1px solid black";
+        } catch (error) {
+            console.error("Error loading popup:", error);
+        }
+    }
+</script>

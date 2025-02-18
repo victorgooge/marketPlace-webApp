@@ -99,3 +99,21 @@ class ProfileUpdateView(UserPassesTestMixin, LoginRequiredMixin, UpdateView):
         profile = self.get_object()
         return self.request.user == profile.user
 
+
+
+
+'''MESSAGING'''
+# List all text threads
+class ListThreads(ListView):
+    pass 
+
+# Thread details (thread with messages)
+def thread_view(request, pk):
+    thread = Thread.objects.get(pk=pk)
+    messages = Message.objects.all()
+
+# Create new thread
+def create_thread(request):
+    pass
+
+# Write new message:
