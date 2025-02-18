@@ -46,11 +46,11 @@ class Message(models.Model): # message tokens
     thread = models.ForeignKey('Thread', on_delete=models.CASCADE, related_name='+', blank=True, null=True) # thread can be empty
     sender_acc = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+') # user account sending message
     receiver_acc = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+') # user account recieving message
-    messageText = models.CharField() # sender can type as much as needed
+    messageText = models.CharField(max_length=10000) # sender can type as much as needed
     messageImage = models.ImageField(upload_to='message_images', blank=True, null=True) # TODO: create folder two folders in media: {threadID}/message_images
     timestamp = models.DateTimeField(default=timezone.now)
     delivered = models.BooleanField(default=False)
     read = models.BooleanField(default=False)
-    
+
     
 
