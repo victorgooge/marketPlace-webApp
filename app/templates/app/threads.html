@@ -1,9 +1,17 @@
-<head>
-    <title></title>
-    <style>
+{% extends "base.html" %}
+{% block title %}Messages — MarketPlace{% endblock %}
 
-    </style>
-</head>
-<div>
-    
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+  <div class="page-header">
+    <h1>Messages</h1>
+    <p>Real-time messaging is coming in Phase 6.</p>
+  </div>
+
+  <div class="empty-state">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+    <h3>Inbox coming soon</h3>
+    <p>Direct messaging between buyers and sellers will be available shortly.</p>
+  </div>
 </div>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Chat with {{ other.username }} — MarketPlace{% endblock %}
+
+{% block content %}
+<div class="container chatroom-wrap">
+
+  <!-- Header -->
+  <div class="chatroom-header">
+    <a href="{% url 'inbox' %}" class="btn btn-ghost" style="padding: 0.4rem 0.75rem;">
+      <i class="fa-solid fa-arrow-left"></i>
+    </a>
+    {% if other %}
+      <img src="{{ other.profile.profile_picture.url }}"
+           alt="{{ other.username }}"
+           style="width:38px; height:38px; border-radius:50%; object-fit:cover; border:2px solid var(--color-border);">
+      <div>
+        <strong>{{ other.username }}</strong>
+        {% if conversation.listing %}
+          <div style="font-size:0.78rem; color:var(--color-text-muted);">
+            re: <a href="{% url 'listing-detail' conversation.listing.pk %}">{{ conversation.listing.title|truncatechars:40 }}</a>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Messages -->
+  <div class="chatroom-messages" id="msg-container">
+    <div class="chatroom-empty" id="empty-hint">
+      <i class="fa-regular fa-comment-dots" style="font-size:2rem; margin-bottom:0.5rem; color:var(--color-border);"></i>
+      <p>Send a message to start the conversation.</p>
+    </div>
+  </div>
+
+  <!-- Typing indicator -->
+  <div class="typing-indicator" id="typing-indicator" style="display:none;">
+    <span>{{ other.username }} is typing</span>
+    <span class="typing-dots"><span></span><span></span><span></span></span>
+  </div>
+
+  <!-- File preview pill (shown when a file is selected) -->
+  <div class="chat-file-preview" id="file-preview" style="display:none;">
+    <i class="fa-solid fa-paperclip" style="font-size:0.8rem;"></i>
+    <span id="file-preview-name"></span>
+    <button type="button" id="file-clear-btn" class="chat-file-clear" title="Remove file">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- Input bar -->
+  <form class="chatroom-input" id="chat-form" autocomplete="off">
+    <!-- Hidden file input -->
+    <input type="file" id="file-input" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt">
+
+    <button type="button" id="attach-btn" class="btn btn-ghost chat-attach-btn" title="Attach file">
+      <i class="fa-solid fa-paperclip"></i>
+    </button>
+    <input type="text" id="msg-input" placeholder="Type a message…" maxlength="5000" autofocus>
+    <button type="submit" class="btn btn-primary">
+      <i class="fa-solid fa-paper-plane"></i>
+    </button>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const CONVERSATION_ID  = {{ conversation.pk }};
+  const CURRENT_USER     = "{{ request.user.username }}";
+  const WS_SCHEME        = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const WS_URL           = `${WS_SCHEME}://${window.location.host}/ws/chat/${CONVERSATION_ID}/`;
+  const ATTACHMENT_URL   = "{% url 'send-attachment' conversation.pk %}";
+  const CSRF_TOKEN       = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+  const msgContainer  = document.getElementById('msg-container');
+  const emptyHint     = document.getElementById('empty-hint');
+  const typingEl      = document.getElementById('typing-indicator');
+  const form          = document.getElementById('chat-form');
+  const input         = document.getElementById('msg-input');
+  const attachBtn     = document.getElementById('attach-btn');
+  const fileInput     = document.getElementById('file-input');
+  const filePreview   = document.getElementById('file-preview');
+  const fileNameEl    = document.getElementById('file-preview-name');
+  const fileClearBtn  = document.getElementById('file-clear-btn');
+
+  let typingTimer;
+  let socket;
+  let pendingFile = null;
+
+  function scrollBottom() {
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+  }
+
+  function formatTime(isoString) {
+    const d = new Date(isoString);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  const IMAGE_EXTS = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i;
+
+  function renderAttachment(url, name) {
+    if (IMAGE_EXTS.test(name)) {
+      return `<a href="${url}" target="_blank" rel="noopener">
+                <img src="${url}" class="chat-attachment-img" alt="${escapeHtml(name)}">
+              </a>`;
+    }
+    return `<a href="${url}" class="chat-attachment-file" download target="_blank" rel="noopener">
+              <i class="fa-solid fa-paperclip"></i> ${escapeHtml(name)}
+            </a>`;
+  }
+
+  function renderMessage(msg) {
+    emptyHint.style.display = 'none';
+    const isOwn = msg.sender === CURRENT_USER;
+    const wrap  = document.createElement('div');
+    wrap.className = `chat-msg ${isOwn ? 'chat-msg--own' : 'chat-msg--other'}`;
+
+    let inner = '';
+    if (msg.body) {
+      inner += `<div class="chat-bubble">${escapeHtml(msg.body)}</div>`;
+    }
+    if (msg.attachment_url) {
+      inner += `<div class="chat-bubble chat-bubble--attachment">${renderAttachment(msg.attachment_url, msg.attachment_name)}</div>`;
+    }
+    inner += `<div class="chat-meta">${escapeHtml(msg.sender)} · ${formatTime(msg.sent_at)}</div>`;
+
+    wrap.innerHTML = inner;
+    msgContainer.appendChild(wrap);
+    scrollBottom();
+  }
+
+  function connect() {
+    socket = new WebSocket(WS_URL);
+
+    socket.onmessage = function (e) {
+      const data = JSON.parse(e.data);
+      if (data.type === 'history') {
+        data.messages.forEach(renderMessage);
+      } else if (data.type === 'message') {
+        renderMessage(data.message);
+      } else if (data.type === 'typing' && data.sender !== CURRENT_USER) {
+        typingEl.style.display = 'flex';
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => { typingEl.style.display = 'none'; }, 2500);
+      }
+    };
+
+    socket.onclose = function () {
+      setTimeout(connect, 2000);
+    };
+  }
+
+  // ── Attachment button ──────────────────────────────────────
+  attachBtn.addEventListener('click', function () {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', function () {
+    pendingFile = fileInput.files[0] || null;
+    if (pendingFile) {
+      fileNameEl.textContent = pendingFile.name;
+      filePreview.style.display = 'flex';
+    } else {
+      filePreview.style.display = 'none';
+    }
+  });
+
+  fileClearBtn.addEventListener('click', function () {
+    pendingFile = null;
+    fileInput.value = '';
+    filePreview.style.display = 'none';
+  });
+
+  // ── Form submit ────────────────────────────────────────────
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const body = input.value.trim();
+
+    if (pendingFile) {
+      // Upload via HTTP — view will broadcast through channel layer
+      const fd = new FormData();
+      if (body) fd.append('body', body);
+      fd.append('file', pendingFile);
+
+      try {
+        await fetch(ATTACHMENT_URL, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': CSRF_TOKEN },
+          body: fd,
+        });
+      } catch (err) {
+        console.error('Attachment upload failed:', err);
+      }
+
+      input.value    = '';
+      pendingFile    = null;
+      fileInput.value = '';
+      filePreview.style.display = 'none';
+
+    } else {
+      // Text-only: send via WebSocket
+      if (!body || socket.readyState !== WebSocket.OPEN) return;
+      socket.send(JSON.stringify({ body }));
+      input.value = '';
+    }
+  });
+
+  // ── Typing indicator ───────────────────────────────────────
+  input.addEventListener('input', function () {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: 'typing' }));
+    }
+  });
+
+  connect();
+</script>
+{% endblock %}

@@ -1,58 +1,85 @@
-<head>
-    <title>Explore</title>
-    <style>
-        img{
-            max-width: 100%;
-            max-height: 100%;
-            display: block; 
-        }
+{% extends "base.html" %}
+{% block title %}Explore — MarketPlace{% endblock %}
 
-        .listing-header {
-            display:flex;
-            align-items:center;
-            margin-left:10px;
-        }
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>Explore Listings</h1>
+    <p>Discover items listed by sellers near you.</p>
+  </div>
 
-        .listing-header img {
-            width: 40px; 
-            height: 40px; 
-            border-radius: 50%;
-            margin: 15px 10px 0px 0px; 
-        }
+  {% if page_obj %}
+    <div class="listing-grid">
+      {% for listing in page_obj %}
+        {% with is_saved=listing.pk|stringformat:"i" %}
+        <div class="listing-card-wrap" style="position: relative;">
 
-        #listing-title {
-            margin-left: 15px;
-        }
-    </style>
-</head>
-<h1>Explore</h1>
-<a href="{% url 'dashboard-home' %}">My Profile &#x2192;</a>    
-<hr>
-{% if all_listings %}
-    {% for listing in all_listings %}
-        <br>
-        <div style="border:black solid 1px; width:300px;" class="user_post">
-            {% for profile in profiles %}
-            {% if listing.owner == profile.user %}
-                <div class='listing-header'>
-                    <img src="{{ profile.profile_picture.url }}"><p>{{ listing.owner }}</p>
+          <!-- Bookmark button -->
+          {% if user.is_authenticated %}
+            <button class="bookmark-btn {% if listing.pk in saved_ids %}saved{% endif %}"
+                    data-pk="{{ listing.pk }}"
+                    data-url="{% url 'listing-save' listing.pk %}"
+                    title="{% if listing.pk in saved_ids %}Unsave{% else %}Save{% endif %}">
+              <i class="{% if listing.pk in saved_ids %}fa-solid{% else %}fa-regular{% endif %} fa-bookmark"></i>
+            </button>
+          {% else %}
+            <a href="{% url 'login' %}" class="bookmark-btn" title="Log in to save">
+              <i class="fa-regular fa-bookmark"></i>
+            </a>
+          {% endif %}
+
+          <a href="{% url 'listing-detail' listing.pk %}" class="listing-card">
+            <div class="listing-card__img-wrap">
+              {% if listing.image %}
+                <img src="{{ listing.image.url }}"
+                     alt="{{ listing.title }}"
+                     class="listing-card__img"
+                     loading="lazy">
+              {% else %}
+                <div class="listing-card__placeholder">
+                  <i class="fa-regular fa-image"></i>
                 </div>
-            {% endif %}
-            {% endfor %}
-            <h3 id="listing-title">{{ listing.title }}</h3>
-            <hr>
-            {% if listing.image %}
-                <a href="{% url 'listing-detail' listing.pk %}" style="text-decoration:none; color:black;">
-                    <img src="{{ listing.image.url }}" alt="">
-                </a>
-            {% endif %}
-            <p style='text-decoration:underline';><em>Asking Price: </em><strong>${{ listing.price }}</strong></p>
-            <p>{{ listing.caption }}</p>
-            <p class="listing_time" style="color:#71797E; font-size:14px;">{{ listing.timestamp }}</p>
+              {% endif %}
+            </div>
+
+            <div class="listing-card__body">
+              <div class="listing-card__price">${{ listing.price }}</div>
+              <div class="listing-card__title">{{ listing.title }}</div>
+
+              <div class="listing-card__meta">
+                <img src="{{ listing.owner.profile.profile_picture.url }}"
+                     alt="{{ listing.owner.username }}"
+                     class="listing-card__avatar">
+                <span class="listing-card__seller">{{ listing.owner.username }}</span>
+                <span class="listing-card__time">{{ listing.timestamp|timesince }} ago</span>
+              </div>
+            </div>
+          </a>
+
         </div>
-        <br>
-        <hr>
-        <br>
-    {% endfor %}
-{% endif %}
-<a href="{% url 'logout' %}">Logout</a>
+        {% endwith %}
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}">&laquo; Prev</a>
+      {% endif %}
+      <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">Next &raquo;</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  {% else %}
+    <div class="empty-state">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+      <h3>No listings yet</h3>
+      <p>Be the first to <a href="{% url 'listing-create' %}">post a listing</a>.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

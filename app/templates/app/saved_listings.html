@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Saved Listings — MarketPlace{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>Saved Listings</h1>
+    <p>Items you've bookmarked.</p>
+  </div>
+
+  {% if saved %}
+    <div class="listing-grid">
+      {% for save in saved %}
+        {% with listing=save.listing %}
+        <div class="listing-card-wrap">
+
+          <button class="bookmark-btn saved"
+                  data-pk="{{ listing.pk }}"
+                  data-url="{% url 'listing-save' listing.pk %}"
+                  title="Unsave">
+            <i class="fa-solid fa-bookmark"></i>
+          </button>
+
+          <a href="{% url 'listing-detail' listing.pk %}" class="listing-card">
+            <div class="listing-card__img-wrap">
+              {% if listing.image %}
+                <img src="{{ listing.image.url }}"
+                     alt="{{ listing.title }}"
+                     class="listing-card__img"
+                     loading="lazy">
+              {% else %}
+                <div class="listing-card__placeholder">
+                  <i class="fa-regular fa-image"></i>
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="listing-card__body">
+              <div class="listing-card__price">${{ listing.price }}</div>
+              <div class="listing-card__title">{{ listing.title }}</div>
+              <div class="listing-card__meta">
+                <img src="{{ listing.owner.profile.profile_picture.url }}"
+                     alt="{{ listing.owner.username }}"
+                     class="listing-card__avatar">
+                <span class="listing-card__seller">{{ listing.owner.username }}</span>
+                <span class="listing-card__time">{{ save.saved_at|timesince }} ago</span>
+              </div>
+            </div>
+          </a>
+
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="empty-state">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🔖</div>
+      <h3>No saved listings yet</h3>
+      <p style="margin-bottom: 1.25rem;">Tap the bookmark icon on any listing to save it here.</p>
+      <a href="{% url 'feed' %}" class="btn btn-primary">
+        <i class="fa-solid fa-compass"></i> Browse Listings
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

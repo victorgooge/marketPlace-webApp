@@ -1,0 +1,283 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MarketPlace{% endblock %}</title>
+
+  <!-- Google Fonts: Inter + Sora -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- Design system -->
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- ── Navbar ─────────────────────────────────────────── -->
+  <nav class="navbar">
+    <a href="{% url 'index' %}" class="navbar__logo">
+      <i class="fa-solid fa-store"></i> MarketPlace
+    </a>
+
+    <!-- Search -->
+    <form class="navbar__search" action="{% url 'search' %}" method="GET" autocomplete="off" role="search">
+      <span class="navbar__search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+      <input type="text" name="q" id="navbar-search"
+             placeholder="Search listings…"
+             value="{% if request.GET.q %}{{ request.GET.q }}{% endif %}"
+             aria-label="Search listings"
+             aria-autocomplete="list"
+             aria-controls="search-suggestions">
+      <ul class="search-suggestions" id="search-suggestions" role="listbox" hidden></ul>
+    </form>
+
+    <div class="navbar__links">
+      <a href="{% url 'feed' %}" class="navbar__link">Explore</a>
+
+      {% if user.is_authenticated %}
+        <a href="{% url 'saved-listings' %}" class="navbar__link" title="Saved listings">
+          <i class="fa-regular fa-bookmark"></i>
+        </a>
+        <a href="{% url 'inbox' %}" class="navbar__link navbar__link--icon" title="Messages" style="position:relative;">
+          <i class="fa-regular fa-comment-dots"></i>
+          {% if unread_count %}<span class="nav-badge">{{ unread_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'listing-create' %}" class="navbar__link navbar__link--sell">
+          <i class="fa-solid fa-plus"></i> Sell
+        </a>
+
+        <div class="navbar__avatar-wrap">
+          <button class="navbar__avatar-btn" type="button" aria-label="Account menu">
+            <img src="{{ user.profile.profile_picture.url }}"
+                 alt="{{ user.username }}"
+                 class="navbar__avatar-img">
+            <span>{{ user.username }}</span>
+            <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;"></i>
+          </button>
+          <div class="navbar__dropdown">
+            <a href="{% url 'dashboard-home' %}"><i class="fa-solid fa-gauge" style="width:16px"></i> Dashboard</a>
+            <div class="navbar__dropdown-divider"></div>
+            <a href="{% url 'logout' %}" class="danger"><i class="fa-solid fa-right-from-bracket" style="width:16px"></i> Logout</a>
+          </div>
+        </div>
+
+      {% else %}
+        <a href="{% url 'login' %}" class="navbar__link navbar__link--outline">Login</a>
+        <a href="{% url 'signup' %}" class="navbar__link navbar__link--sell">Sign Up</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- ── Main content ───────────────────────────────────── -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── Toast messages ────────────────────────────────── -->
+  {% if messages %}
+  <div class="toast-container" id="toast-container">
+    {% for message in messages %}
+      <div class="toast toast--{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">
+        {% if message.tags == 'success' %}<i class="fa-solid fa-circle-check"></i>
+        {% elif message.tags == 'error' %}<i class="fa-solid fa-circle-xmark"></i>
+        {% elif message.tags == 'warning' %}<i class="fa-solid fa-triangle-exclamation"></i>
+        {% else %}<i class="fa-solid fa-circle-info"></i>{% endif %}
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Footer ─────────────────────────────────────────── -->
+  <footer>
+    <p>© 2026 MarketPlace &nbsp;·&nbsp;
+      <a href="{% url 'feed' %}">Explore</a> &nbsp;·&nbsp;
+      {% if user.is_authenticated %}
+        <a href="{% url 'dashboard-home' %}">Dashboard</a>
+      {% else %}
+        <a href="{% url 'login' %}">Login</a>
+      {% endif %}
+    </p>
+  </footer>
+
+  <!-- Auto-dismiss toasts after 4s -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const toasts = document.querySelectorAll('.toast');
+      toasts.forEach(function (t) {
+        setTimeout(function () {
+          t.style.transition = 'opacity 0.4s ease';
+          t.style.opacity = '0';
+          setTimeout(function () { t.remove(); }, 400);
+        }, 4000);
+      });
+    });
+  </script>
+
+  <!-- Bookmark toggle (shared across feed, detail, saved pages) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+      document.querySelectorAll('.bookmark-btn[data-url]').forEach(function (btn) {
+        btn.addEventListener('click', async function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          try {
+            const res = await fetch(btn.dataset.url, {
+              method: 'POST',
+              headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await res.json();
+            const icon = btn.querySelector('i');
+
+            if (data.saved) {
+              btn.classList.add('saved');
+              icon.className = 'fa-solid fa-bookmark';
+              btn.title = 'Unsave';
+            } else {
+              btn.classList.remove('saved');
+              icon.className = 'fa-regular fa-bookmark';
+              btn.title = 'Save';
+
+              // If on the saved page, fade out the card
+              const wrap = btn.closest('.listing-card-wrap');
+              if (wrap && window.location.pathname.includes('/saved/')) {
+                wrap.style.transition = 'opacity 0.3s ease';
+                wrap.style.opacity = '0';
+                setTimeout(function () { wrap.remove(); }, 300);
+              }
+            }
+
+            // Pop animation
+            btn.classList.remove('pop');
+            void btn.offsetWidth; // reflow to restart animation
+            btn.classList.add('pop');
+          } catch (err) {
+            console.error('Bookmark error:', err);
+          }
+        });
+      });
+    });
+  </script>
+
+  <!-- Follow toggle (shared across listing detail + public profile) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+      document.querySelectorAll('.follow-btn[data-url]').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          try {
+            const res  = await fetch(btn.dataset.url, {
+              method: 'POST',
+              headers: { 'X-CSRFToken': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await res.json();
+
+            if (data.following) {
+              btn.classList.add('follow-btn--following');
+              btn.innerHTML = '<i class="fa-solid fa-user-minus"></i> Following';
+            } else {
+              btn.classList.remove('follow-btn--following');
+              btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Follow';
+            }
+
+            // Update any follower count element on the page
+            const counter = btn.dataset.counter
+              ? document.querySelector(btn.dataset.counter)
+              : document.getElementById('follower-count');
+            if (counter) counter.textContent = data.follower_count;
+
+            btn.style.transition = 'transform 0.15s';
+            btn.style.transform  = 'scale(1.05)';
+            setTimeout(function () { btn.style.transform = ''; }, 150);
+          } catch (err) {
+            console.error('Follow error:', err);
+          }
+        });
+      });
+    });
+  </script>
+
+  <!-- Navbar search autocomplete -->
+  <script>
+    (function () {
+      const input = document.getElementById('navbar-search');
+      const list  = document.getElementById('search-suggestions');
+      if (!input || !list) return;
+
+      let debounce;
+
+      input.addEventListener('input', function () {
+        clearTimeout(debounce);
+        const q = input.value.trim();
+        if (q.length < 2) { list.innerHTML = ''; list.hidden = true; return; }
+
+        debounce = setTimeout(async function () {
+          try {
+            const res  = await fetch('{% url "search-autocomplete" %}?q=' + encodeURIComponent(q));
+            const data = await res.json();
+            list.innerHTML = '';
+            if (!data.results.length) { list.hidden = true; return; }
+
+            data.results.forEach(function (title) {
+              const li = document.createElement('li');
+              li.className = 'search-suggestions__item';
+              li.setAttribute('role', 'option');
+              li.textContent = title;
+              li.addEventListener('mousedown', function (e) {
+                e.preventDefault();
+                input.value = title;
+                list.hidden = true;
+                input.closest('form').submit();
+              });
+              list.appendChild(li);
+            });
+            list.hidden = false;
+          } catch (_) {}
+        }, 220);
+      });
+
+      input.addEventListener('keydown', function (e) {
+        const items = list.querySelectorAll('.search-suggestions__item');
+        const active = list.querySelector('.search-suggestions__item--active');
+        let idx = Array.from(items).indexOf(active);
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (active) active.classList.remove('search-suggestions__item--active');
+          items[(idx + 1) % items.length]?.classList.add('search-suggestions__item--active');
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (active) active.classList.remove('search-suggestions__item--active');
+          items[(idx - 1 + items.length) % items.length]?.classList.add('search-suggestions__item--active');
+        } else if (e.key === 'Enter' && active) {
+          e.preventDefault();
+          input.value = active.textContent;
+          list.hidden = true;
+          input.closest('form').submit();
+        } else if (e.key === 'Escape') {
+          list.hidden = true;
+        }
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!input.contains(e.target) && !list.contains(e.target)) list.hidden = true;
+      });
+    })();
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

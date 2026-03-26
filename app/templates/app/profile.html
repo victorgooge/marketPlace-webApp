@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.username }} — MarketPlace{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem; padding-bottom: 3rem;">
+
+  <!-- Profile header -->
+  <div class="profile-header">
+    <img src="{{ profile.profile_picture.url }}"
+         alt="{{ profile_user.username }}"
+         class="profile-avatar">
+
+    <div class="profile-info">
+      <h2>{{ profile_user.username }}
+        {% if profile_user.profile.is_verified_seller %}
+          <span class="badge badge-primary" style="font-size: 0.7rem; vertical-align: middle;">
+            <i class="fa-solid fa-circle-check"></i> Verified
+          </span>
+        {% endif %}
+      </h2>
+      {% if profile_user.first_name or profile_user.last_name %}
+        <p>{{ profile_user.first_name }} {{ profile_user.last_name }}</p>
+      {% endif %}
+      {% if profile.location %}
+        <p><i class="fa-solid fa-location-dot" style="font-size:0.8rem;"></i> {{ profile.location }}</p>
+      {% endif %}
+      {% if profile.about %}
+        <p style="margin-top: 0.4rem; color: var(--color-text);">{{ profile.about }}</p>
+      {% endif %}
+
+      <!-- Stats bar -->
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <span class="profile-stat__num" id="follower-count">{{ profile_user.follower_count }}</span>
+          <span class="profile-stat__label">Followers</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat__num">{{ profile_user.following_count }}</span>
+          <span class="profile-stat__label">Following</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat__num">{{ listings|length }}</span>
+          <span class="profile-stat__label">Listings</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-actions">
+      {% if user.is_authenticated and user != profile_user %}
+        <button class="btn follow-btn {% if is_following %}follow-btn--following{% endif %}"
+                data-url="{% url 'follow-toggle' profile_user.username %}"
+                data-username="{{ profile_user.username }}">
+          {% if is_following %}
+            <i class="fa-solid fa-user-minus"></i> Following
+          {% else %}
+            <i class="fa-solid fa-user-plus"></i> Follow
+          {% endif %}
+        </button>
+      {% elif user == profile_user %}
+        <a href="{% url 'profile-update' profile.pk %}" class="btn btn-ghost">
+          <i class="fa-solid fa-pen"></i> Edit Profile
+        </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Listings grid -->
+  <h2 style="font-size: 1.2rem; margin-bottom: 1.25rem;">
+    {{ profile_user.username }}'s Listings
+  </h2>
+
+  {% if listings %}
+    <div class="listing-grid">
+      {% for listing in listings %}
+        <div class="listing-card-wrap">
+          {% if user.is_authenticated %}
+            <button class="bookmark-btn"
+                    data-pk="{{ listing.pk }}"
+                    data-url="{% url 'listing-save' listing.pk %}"
+                    title="Save">
+              <i class="fa-regular fa-bookmark"></i>
+            </button>
+          {% endif %}
+          <a href="{% url 'listing-detail' listing.pk %}" class="listing-card">
+            <div class="listing-card__img-wrap">
+              {% if listing.image %}
+                <img src="{{ listing.image.url }}" alt="{{ listing.title }}"
+                     class="listing-card__img" loading="lazy">
+              {% else %}
+                <div class="listing-card__placeholder"><i class="fa-regular fa-image"></i></div>
+              {% endif %}
+            </div>
+            <div class="listing-card__body">
+              <div class="listing-card__price">${{ listing.price }}</div>
+              <div class="listing-card__title">{{ listing.title }}</div>
+              <div class="listing-card__meta">
+                <span class="listing-card__time">{{ listing.timestamp|timesince }} ago</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🏷️</div>
+      <h3>No listings yet</h3>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

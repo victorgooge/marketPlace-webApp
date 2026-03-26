@@ -1,38 +1,59 @@
-<head>
-    <title>Edit Profile</title>
-    <style>
-        form {
-            display:flex;
-            align-items:center;
-            flex-wrap:wrap;
-            width:250px;
-        }
-        
-        .section {
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<div>
-    <h1>Edit Profile</h1>
-    <hr>
-    <form action="" method="POST" enctype="multipart/form-data">
+{% extends "base.html" %}
+{% block title %}Edit Profile — MarketPlace{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; padding: 2.5rem 1rem;">
+  <div style="width: 100%; max-width: 480px;">
+
+    <div style="margin-bottom: 1.75rem;">
+      <h1 style="font-size: 1.6rem;">Edit Profile</h1>
+      <p style="color: var(--color-text-muted); margin-top: 0.25rem;">Update your public profile information.</p>
+    </div>
+
+    <div class="form-card">
+      <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
 
-        <div class="section">
-            <label for={{ form.profile_picture.label }}>{{ form.profile_picture.label }}</label>
-            <div class="form-input">{{ form.profile_picture }}</div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.profile_picture.id_for_label }}">Profile Photo</label>
+          {% if object.profile_picture %}
+            <img src="{{ object.profile_picture.url }}"
+                 alt="Current photo"
+                 style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-border); margin-bottom: 0.75rem;">
+          {% endif %}
+          {{ form.profile_picture }}
+          {% if form.profile_picture.errors %}
+            <p class="form-error">{{ form.profile_picture.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
-        <div class="section">
-            <label for={{ form.location.label }}>{{ form.location.label }}</label>
-            <div class="form-input">{{ form.location }}</div>
+        <div class="form-group">
+          <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
+          {{ form.location }}
+          {% if form.location.errors %}
+            <p class="form-error">{{ form.location.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
-        <div class="section">
-            <label for={{ form.about.label }}>{{ form.about.label }}</label>
-            <div class="form-input">{{ form.about }}</div> 
+        <div class="form-group">
+          <label class="form-label" for="{{ form.about.id_for_label }}">About</label>
+          {{ form.about }}
+          <p class="form-hint">Max 500 characters. Tell buyers a bit about yourself.</p>
+          {% if form.about.errors %}
+            <p class="form-error">{{ form.about.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
-        <input type="submit" value="Confirm">
+        <input type="submit" value="Save Profile">
+      </form>
+    </div>
+
+    <div style="margin-top: 1rem; text-align: center;">
+      <a href="{% url 'dashboard-home' %}" class="text-muted" style="font-size: 0.875rem;">
+        <i class="fa-solid fa-xmark"></i> Cancel
+      </a>
+    </div>
+
+  </div>
 </div>
+{% endblock %}

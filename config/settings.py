@@ -27,25 +27,42 @@ load_dotenv()
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',                          # must be before staticfiles to override runserver
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_model_signals',
-    
+    'django.contrib.sites',
+    'channels',
+
     # local
     'app',
 ]
+
+ASGI_APPLICATION = 'config.asgi.application'
+
+# Channel layer — InMemoryChannelLayer is fine for development (single process).
+# For production with multiple workers, switch to channels_redis:
+#   pip install channels-redis
+#   BACKEND: 'channels_redis.core.RedisChannelLayer'
+#   CONFIG:  {'hosts': [('127.0.0.1', 6379)]}
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -70,6 +87,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'app.context_processors.unread_messages_count',
             ],
         },
     },
@@ -124,6 +142,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles/')
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'feed'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

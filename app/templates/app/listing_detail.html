@@ -1,54 +1,113 @@
-<head>
-    <title>{{ listing.title }}</title>
-    <style>
-        div#profile {
-            display:flex;
-            align-items:center;
-        }
+{% extends "base.html" %}
+{% block title %}{{ listing.title }} — MarketPlace{% endblock %}
 
-        div#profile > * {
-            margin-right: 10px;
-        }
+{% block content %}
+<div class="container">
+  <div class="listing-detail">
 
-        div#profile img {
-            width: 50px; 
-            height: 50px; 
-            border-radius: 50%;
-            margin: 0px 10px 0px 0px; 
-        }
+    <!-- Left: image + description -->
+    <div>
+      {% if listing.image %}
+        <img src="{{ listing.image.url }}"
+             alt="{{ listing.title }}"
+             class="listing-detail__img">
+      {% else %}
+        <div class="listing-detail__img-placeholder">
+          <i class="fa-regular fa-image"></i>
+        </div>
+      {% endif %}
 
-        div#popup {
-            margin-top: 50px;
-        }
-    </style>
-</head>
-<div>
-    <h1>{{ listing.title }}</h1>
-    <div id="profile">
-        <img src="{{ profile.profile_picture.url }}">
-        <p>{{ listing.owner }}</p>
+      <div style="margin-top: 1.5rem;">
+        <div style="display: flex; align-items: flex-start; gap: 1rem;">
+          <h1 class="listing-detail__title" style="flex: 1;">{{ listing.title }}</h1>
+          {% if user.is_authenticated and user != listing.owner %}
+            <button class="bookmark-btn {% if is_saved %}saved{% endif %}"
+                    id="detail-bookmark"
+                    data-pk="{{ listing.pk }}"
+                    data-url="{% url 'listing-save' listing.pk %}"
+                    style="position: static; flex-shrink: 0; width: 40px; height: 40px; font-size: 1rem;"
+                    title="{% if is_saved %}Unsave{% else %}Save listing{% endif %}">
+              <i class="{% if is_saved %}fa-solid{% else %}fa-regular{% endif %} fa-bookmark"></i>
+            </button>
+          {% endif %}
+        </div>
+        <div class="listing-detail__price">${{ listing.price }}</div>
+        <p class="listing-detail__body">{{ listing.caption }}</p>
+        <p class="listing-detail__time">
+          <i class="fa-regular fa-clock"></i> Posted {{ listing.timestamp|timesince }} ago
+        </p>
+      </div>
+
+      <!-- Owner controls -->
+      {% if user == listing.owner %}
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);">
+        <a href="{% url 'listing-update' listing.pk %}" class="btn btn-outline">
+          <i class="fa-solid fa-pen-to-square"></i> Edit Listing
+        </a>
+        <a href="{% url 'listing-delete' listing.pk %}" class="btn btn-danger">
+          <i class="fa-solid fa-trash"></i> Delete
+        </a>
+      </div>
+      {% endif %}
     </div>
-    <hr>
-    {% if listing.image %}
-        <img src="{{listing.image.url}}" style="width:40%">
-    {% endif %}
-    <hr>
-    <p style="text-decoration:underline;"><em>Asking Price: </em><strong>${{ listing.price }}</strong></p>
-    <p>{{ listing.caption }}</p>
-    <p style="color:#71797E; font-size:14px;">{{ listing.timestamp }}</p>
-    <button onclick="showFrame()">Message Seller</button>
-    <div id="popup"><div></div>
-<script>
-    const showFrame = async () => {
-        const frame = document.getElementById("popup");
-        try {
-            const response = await fetch("update"); // Ensure file exists in the correct path
-            const html = await response.text();
-            
-            frame.innerHTML = html;
-            frame.style.border = "1px solid black";
-        } catch (error) {
-            console.error("Error loading popup:", error);
-        }
-    }
-</script>
+
+    <!-- Right: seller card -->
+    <div>
+      <div class="seller-card">
+        <div class="seller-card__header">
+          <a href="{% url 'public-profile' listing.owner.username %}"
+             style="text-decoration:none; display:flex; align-items:center; gap:0.75rem; flex:1;">
+            <img src="{{ profile.profile_picture.url }}"
+                 alt="{{ listing.owner.username }}"
+                 class="seller-card__avatar">
+            <div>
+              <div class="seller-card__name">{{ listing.owner.username }}</div>
+              {% if profile.location %}
+                <div class="seller-card__sub">
+                  <i class="fa-solid fa-location-dot" style="font-size:0.75rem;"></i> {{ profile.location }}
+                </div>
+              {% endif %}
+            </div>
+          </a>
+        </div>
+
+        <!-- Follower count -->
+        <p style="font-size:0.8rem; color:var(--color-text-muted);">
+          <span id="seller-follower-count">{{ follower_count }}</span>
+          follower{{ follower_count|pluralize }}
+        </p>
+
+        {% if profile.about %}
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">{{ profile.about }}</p>
+        {% endif %}
+
+        <!-- Follow button (hidden for own listings) -->
+        {% if user.is_authenticated and user != listing.owner %}
+          <button class="btn follow-btn {% if is_following %}follow-btn--following{% endif %}"
+                  style="width:100%; justify-content:center;"
+                  data-url="{% url 'follow-toggle' listing.owner.username %}"
+                  data-counter="#seller-follower-count"
+                  data-username="{{ listing.owner.username }}">
+            {% if is_following %}
+              <i class="fa-solid fa-user-minus"></i> Following
+            {% else %}
+              <i class="fa-solid fa-user-plus"></i> Follow
+            {% endif %}
+          </button>
+        {% endif %}
+
+        {% if user.is_authenticated and user != listing.owner %}
+          <a href="{% url 'start-conversation' listing.pk %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
+            <i class="fa-solid fa-comment"></i> Message Seller
+          </a>
+        {% endif %}
+
+        <a href="{% url 'feed' %}" class="btn btn-ghost" style="width: 100%; justify-content: center;">
+          <i class="fa-solid fa-arrow-left"></i> Back to Explore
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

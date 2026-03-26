@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}{% if query %}"{{ query }}" — {% endif %}Search — MarketPlace{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="search-layout">
+
+    <!-- ── Filter sidebar ──────────────────────────────── -->
+    <aside class="search-filters">
+      <h2 class="search-filters__title">Filters</h2>
+      <form method="GET" action="{% url 'search' %}" id="filter-form">
+
+        <!-- Preserve the search query -->
+        {% if query %}
+          <input type="hidden" name="q" value="{{ query }}">
+        {% endif %}
+
+        <!-- Price range -->
+        <div class="filter-group">
+          <label class="filter-label">Price Range</label>
+          <div class="price-range">
+            <input type="number" name="min_price" placeholder="Min $"
+                   value="{{ min_price }}" min="0" step="1">
+            <span class="price-range__sep">–</span>
+            <input type="number" name="max_price" placeholder="Max $"
+                   value="{{ max_price }}" min="0" step="1">
+          </div>
+        </div>
+
+        <!-- Sort -->
+        <div class="filter-group">
+          <label class="filter-label">Sort By</label>
+          <div class="sort-options">
+            {% for val, label in sort_choices %}
+              <label class="sort-option {% if sort == val %}active{% endif %}">
+                <input type="radio" name="sort" value="{{ val }}"
+                       {% if sort == val %}checked{% endif %}
+                       onchange="document.getElementById('filter-form').submit()">
+                {{ label }}
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          <i class="fa-solid fa-sliders"></i> Apply
+        </button>
+
+        {% if query or min_price or max_price or sort != 'newest' %}
+          <a href="{% url 'search' %}" class="btn btn-ghost"
+             style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+            <i class="fa-solid fa-xmark"></i> Clear Filters
+          </a>
+        {% endif %}
+
+      </form>
+    </aside>
+
+    <!-- ── Results ─────────────────────────────────────── -->
+    <div class="search-results">
+
+      <div class="search-results__header">
+        {% if query %}
+          <h1 class="search-results__heading">
+            Results for <span style="color: var(--color-primary);">"{{ query }}"</span>
+          </h1>
+        {% else %}
+          <h1 class="search-results__heading">All Listings</h1>
+        {% endif %}
+        <span class="search-results__count">{{ result_count }} listing{{ result_count|pluralize }}</span>
+      </div>
+
+      {% if page_obj %}
+        <div class="listing-grid">
+          {% for listing in page_obj %}
+            <div class="listing-card-wrap">
+
+              {% if user.is_authenticated %}
+                <button class="bookmark-btn {% if listing.pk in saved_ids %}saved{% endif %}"
+                        data-pk="{{ listing.pk }}"
+                        data-url="{% url 'listing-save' listing.pk %}"
+                        title="{% if listing.pk in saved_ids %}Unsave{% else %}Save{% endif %}">
+                  <i class="{% if listing.pk in saved_ids %}fa-solid{% else %}fa-regular{% endif %} fa-bookmark"></i>
+                </button>
+              {% else %}
+                <a href="{% url 'login' %}" class="bookmark-btn" title="Log in to save">
+                  <i class="fa-regular fa-bookmark"></i>
+                </a>
+              {% endif %}
+
+              <a href="{% url 'listing-detail' listing.pk %}" class="listing-card">
+                <div class="listing-card__img-wrap">
+                  {% if listing.image %}
+                    <img src="{{ listing.image.url }}"
+                         alt="{{ listing.title }}"
+                         class="listing-card__img"
+                         loading="lazy">
+                  {% else %}
+                    <div class="listing-card__placeholder">
+                      <i class="fa-regular fa-image"></i>
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="listing-card__body">
+                  <div class="listing-card__price">${{ listing.price }}</div>
+                  <div class="listing-card__title">{{ listing.title }}</div>
+                  <div class="listing-card__meta">
+                    <img src="{{ listing.owner.profile.profile_picture.url }}"
+                         alt="{{ listing.owner.username }}"
+                         class="listing-card__avatar">
+                    <span class="listing-card__seller">{{ listing.owner.username }}</span>
+                    <span class="listing-card__time">{{ listing.timestamp|timesince }} ago</span>
+                  </div>
+                </div>
+              </a>
+
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="pagination">
+          {% if page_obj.has_previous %}
+            <a href="?q={{ query }}&sort={{ sort }}&min_price={{ min_price }}&max_price={{ max_price }}&page={{ page_obj.previous_page_number }}">&laquo; Prev</a>
+          {% endif %}
+          <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+            <a href="?q={{ query }}&sort={{ sort }}&min_price={{ min_price }}&max_price={{ max_price }}&page={{ page_obj.next_page_number }}">Next &raquo;</a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+      {% else %}
+        <div class="empty-state">
+          <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+          <h3>No results found</h3>
+          <p style="margin-bottom: 1.25rem;">
+            Try different keywords or adjust your filters.
+          </p>
+          <a href="{% url 'feed' %}" class="btn btn-primary">
+            <i class="fa-solid fa-compass"></i> Browse All Listings
+          </a>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

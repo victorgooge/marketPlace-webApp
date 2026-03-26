@@ -1,9 +1,28 @@
-<head>
-    <title>Delete</title>
-</head>
+{% extends "base.html" %}
+{% block title %}Delete Listing — MarketPlace{% endblock %}
 
-<h1>Are you sure you want to delete this listing?</h1>
-<form action="{% url 'listing-delete' listing.pk %}" method="POST"> 
-    {% csrf_token %}
-    <input type="submit" value="Delete">
-</form>
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; padding: 4rem 1rem;">
+  <div style="width: 100%; max-width: 440px; text-align: center;">
+
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🗑️</div>
+    <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Delete this listing?</h1>
+    <p style="color: var(--color-text-muted); margin-bottom: 2rem;">
+      <strong>{{ object.title }}</strong> will be permanently removed. This action cannot be undone.
+    </p>
+
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+      <a href="{% url 'dashboard-home' %}" class="btn btn-ghost">
+        <i class="fa-solid fa-arrow-left"></i> Cancel
+      </a>
+      <form method="POST" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">
+          <i class="fa-solid fa-trash"></i> Yes, Delete
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Messages — MarketPlace{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+  <div class="page-header">
+    <h1>Messages</h1>
+    <p>Your conversations with buyers and sellers.</p>
+  </div>
+
+  {% if conv_data %}
+    <div class="inbox-list">
+      {% for item in conv_data %}
+        <a href="{% url 'chatroom' item.conv.pk %}" class="inbox-row {% if item.unread %}inbox-row--unread{% endif %}">
+
+          <!-- Avatar -->
+          <div style="position: relative; flex-shrink: 0;">
+            {% if item.other %}
+              <img src="{{ item.other.profile.profile_picture.url }}"
+                   alt="{{ item.other.username }}"
+                   class="inbox-avatar">
+            {% endif %}
+            {% if item.unread %}
+              <span class="inbox-badge">{{ item.unread }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Content -->
+          <div class="inbox-row__body">
+            <div class="inbox-row__header">
+              <span class="inbox-row__name">
+                {% if item.other %}{{ item.other.username }}{% else %}Unknown{% endif %}
+              </span>
+              {% if item.last_msg %}
+                <span class="inbox-row__time">{{ item.last_msg.sent_at|timesince }} ago</span>
+              {% endif %}
+            </div>
+
+            {% if item.conv.listing %}
+              <div class="inbox-row__listing">
+                <i class="fa-solid fa-tag" style="font-size:0.7rem;"></i>
+                {{ item.conv.listing.title|truncatechars:40 }}
+                — ${{ item.conv.listing.price }}
+              </div>
+            {% endif %}
+
+            <div class="inbox-row__preview">
+              {% if item.last_msg %}
+                {% if item.last_msg.sender == request.user %}You: {% endif %}
+                {{ item.last_msg.body|truncatechars:60 }}
+              {% else %}
+                <em>No messages yet. Say hello!</em>
+              {% endif %}
+            </div>
+          </div>
+
+        </a>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="empty-state">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+      <h3>No messages yet</h3>
+      <p style="margin-bottom: 1.25rem;">
+        Find a listing you like and tap <strong>Message Seller</strong> to start a conversation.
+      </p>
+      <a href="{% url 'feed' %}" class="btn btn-primary">
+        <i class="fa-solid fa-compass"></i> Browse Listings
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

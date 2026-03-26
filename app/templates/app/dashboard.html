@@ -1,68 +1,107 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | {{ user.username }}</title>
-    <style>
-        img{
-            max-width: 100%;
-            max-height: 100%;
-            display: inline;
-        }
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ user.username }}{% endblock %}
 
-        .user-profile {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            width: 400px;
-        }
-    
-        .user-profile img {
-            width: 40px; 
-            height: 40px; 
-            border-radius: 50%;
-            margin-right: 10px; 
-        }
+{% block content %}
+<div class="container" style="padding-top: 2rem; padding-bottom: 3rem;">
 
-        #edit-prof {
-            margin: 5px 0px 0px 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="user-profile">
-        <img src="{{ profile.profile_picture.url }}"><h1 id="username">{{ user.username }}</h1><a href="{% url 'profile-update' profile.pk %}" id="edit-prof">Edit Profile</a>
-        <p>{{ user.first_name }} {{ user.last_name }} | {{ profile.location }}</p>
-        <p>{{ profile.about }}</p>
-        <a href="{% url 'feed' %}">&#x2190; Explore</a>
-    </div>
-    <hr>
-    {% if user_listings %}
-        {% for listing in user_listings %}
-        <br>
-        <div style="border:black solid 1px; width:300px;" class="user_post">
-            <a href="{% url 'listing-detail' listing.pk %}" style="text-decoration:none; color:black;">
-                <h3>{{ listing.title }}</h3>
-                <hr>
-                {% if listing.image %}
-                    <img src="{{ listing.image.url }}" alt="">
-                {% endif %}
-                <p style='text-decoration:underline';><em>Asking Price: </em><strong>${{ listing.price }}</strong></p>
-                <p>{{ listing.caption }}</p>
-                <p class="listing_time" style="color:#71797E; font-size:14px;">{{ listing.timestamp }}</p>
-                <a href="{% url 'listing-update' listing.pk %}">Edit</a>
-                <a href="{% url 'listing-delete' listing.pk %}">Delete</a>
-            </a>
+  <!-- Profile header -->
+  <div class="profile-header">
+    <img src="{{ profile.profile_picture.url }}"
+         alt="{{ user.username }}"
+         class="profile-avatar">
+
+    <div class="profile-info">
+      <h2>{{ user.username }}</h2>
+      {% if user.first_name or user.last_name %}
+        <p>{{ user.first_name }} {{ user.last_name }}</p>
+      {% endif %}
+      {% if profile.location %}
+        <p><i class="fa-solid fa-location-dot" style="font-size:0.8rem;"></i> {{ profile.location }}</p>
+      {% endif %}
+      {% if profile.about %}
+        <p style="margin-top: 0.4rem; color: var(--color-text);">{{ profile.about }}</p>
+      {% endif %}
+
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <span class="profile-stat__num">{{ follower_count }}</span>
+          <span class="profile-stat__label">Followers</span>
         </div>
-        </a>
-        <br>
-        {% endfor %}
-        <a href="{% url 'listing-create' %}">Create</a>
-    {% else %}
-        <p>Looks like you have no listings yet... <a href="{% url 'listing-create' %}">Create</a>.</p>
-    {% endif %}
-    <a href="{% url 'logout' %}">Logout</a>
-<script></script>
-</body>
-</html>
+        <div class="profile-stat">
+          <span class="profile-stat__num">{{ following_count }}</span>
+          <span class="profile-stat__label">Following</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat__num">{{ user_listings|length }}</span>
+          <span class="profile-stat__label">Listings</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-actions">
+      <a href="{% url 'profile-update' profile.pk %}" class="btn btn-ghost">
+        <i class="fa-solid fa-pen"></i> Edit Profile
+      </a>
+      <a href="{% url 'listing-create' %}" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> New Listing
+      </a>
+    </div>
+  </div>
+
+  <!-- Listings section -->
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
+    <h2 style="font-size: 1.2rem;">Your Listings</h2>
+    <span style="font-size: 0.85rem; color: var(--color-text-muted);">{{ user_listings|length }} listing{{ user_listings|length|pluralize }}</span>
+  </div>
+
+  {% if user_listings %}
+    <div class="listing-grid">
+      {% for listing in user_listings %}
+        <div class="listing-card" style="cursor: default;">
+          <a href="{% url 'listing-detail' listing.pk %}" style="text-decoration: none; color: inherit; display: contents;">
+            <div class="listing-card__img-wrap">
+              {% if listing.image %}
+                <img src="{{ listing.image.url }}"
+                     alt="{{ listing.title }}"
+                     class="listing-card__img"
+                     loading="lazy">
+              {% else %}
+                <div class="listing-card__placeholder">
+                  <i class="fa-regular fa-image"></i>
+                </div>
+              {% endif %}
+            </div>
+          </a>
+
+          <div class="listing-card__body">
+            <div class="listing-card__price">${{ listing.price }}</div>
+            <div class="listing-card__title">{{ listing.title }}</div>
+
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+              <a href="{% url 'listing-update' listing.pk %}" class="btn btn-ghost"
+                 style="font-size: 0.78rem; padding: 0.35rem 0.75rem; flex: 1; justify-content: center;">
+                <i class="fa-solid fa-pen-to-square"></i> Edit
+              </a>
+              <a href="{% url 'listing-delete' listing.pk %}" class="btn btn-danger"
+                 style="font-size: 0.78rem; padding: 0.35rem 0.75rem; flex: 1; justify-content: center;">
+                <i class="fa-solid fa-trash"></i> Delete
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="empty-state">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🏷️</div>
+      <h3>No listings yet</h3>
+      <p style="margin-bottom: 1.25rem;">Start selling — it only takes a few seconds.</p>
+      <a href="{% url 'listing-create' %}" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Create Your First Listing
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
