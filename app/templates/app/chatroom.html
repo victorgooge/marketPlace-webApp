@@ -24,6 +24,14 @@
     {% endif %}
   </div>
 
+  <!-- Sold banner -->
+  {% if conversation.listing and not conversation.listing.is_active %}
+    <div style="background:#fef2f2; border-bottom:1px solid #fca5a5; padding:0.6rem 1rem; font-size:0.85rem; color:var(--color-danger); display:flex; align-items:center; gap:0.5rem;">
+      <i class="fa-solid fa-circle-check"></i>
+      The listing <strong>{{ conversation.listing.title|truncatechars:40 }}</strong> has been marked as sold.
+    </div>
+  {% endif %}
+
   <!-- Messages -->
   <div class="chatroom-messages" id="msg-container">
     <div class="chatroom-empty" id="empty-hint">

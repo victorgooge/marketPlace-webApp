@@ -6,20 +6,20 @@
 
   <!-- Profile header -->
   <div class="profile-header">
-    <img src="{{ profile.profile_picture.url }}"
-         alt="{{ user.username }}"
-         class="profile-avatar">
+    <img src="{{ profile.profile_picture.url }}" alt="{{ user.username }}" class="profile-avatar">
 
     <div class="profile-info">
-      <h2>{{ user.username }}</h2>
+      <h2>
+        {{ user.username }}
+        {% if profile.is_verified_seller %}
+          <i class="fa-solid fa-circle-check" style="color:var(--color-primary); font-size:0.85rem;" title="Verified Seller"></i>
+        {% endif %}
+      </h2>
       {% if user.first_name or user.last_name %}
         <p>{{ user.first_name }} {{ user.last_name }}</p>
       {% endif %}
       {% if profile.location %}
         <p><i class="fa-solid fa-location-dot" style="font-size:0.8rem;"></i> {{ profile.location }}</p>
-      {% endif %}
-      {% if profile.about %}
-        <p style="margin-top: 0.4rem; color: var(--color-text);">{{ profile.about }}</p>
       {% endif %}
 
       <div class="profile-stats">
@@ -48,27 +48,89 @@
     </div>
   </div>
 
+  <!-- Price-drop alert notifications -->
+  {% if triggered_alerts %}
+    <div style="margin-bottom:1.5rem;">
+      {% for alert in triggered_alerts %}
+        <div style="background:#fffbeb; border:1px solid var(--color-warning); border-radius:var(--radius-sm); padding:0.75rem 1rem; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.75rem; font-size:0.9rem;">
+          <i class="fa-solid fa-bell" style="color:var(--color-warning);"></i>
+          <span>
+            Price drop on <a href="{% url 'listing-detail' alert.listing.pk %}" style="font-weight:600; color:var(--color-text);">{{ alert.listing.title|truncatechars:50 }}</a>
+            — now <strong>${{ alert.listing.price }}</strong>
+          </span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Pending offers section -->
+  {% if pending_offers %}
+    <div style="margin-bottom:2rem;">
+      <h2 style="font-size:1.1rem; margin-bottom:1rem;">
+        <i class="fa-solid fa-tag" style="color:var(--color-primary);"></i>
+        Pending Offers
+        <span style="font-size:0.82rem; font-weight:400; color:var(--color-text-muted); margin-left:0.4rem;">{{ pending_offers|length }}</span>
+      </h2>
+      <div style="display:flex; flex-direction:column; gap:0.6rem;">
+        {% for offer in pending_offers %}
+          <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); padding:1rem 1.25rem; display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+            <img src="{{ offer.buyer.profile.profile_picture.url }}" alt="{{ offer.buyer.username }}"
+                 style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:600; font-size:0.9rem;">
+                <a href="{% url 'public-profile' offer.buyer.username %}" style="color:var(--color-text); text-decoration:none;">{{ offer.buyer.username }}</a>
+                offered <span style="color:var(--color-primary);">${{ offer.amount }}</span>
+              </div>
+              <div style="font-size:0.8rem; color:var(--color-text-muted);">
+                on <a href="{% url 'listing-detail' offer.listing.pk %}" style="color:var(--color-text-muted);">{{ offer.listing.title|truncatechars:45 }}</a>
+                · {{ offer.created_at|timesince }} ago
+              </div>
+              {% if offer.message %}
+                <div style="font-size:0.82rem; margin-top:0.2rem; color:var(--color-text);">{{ offer.message }}</div>
+              {% endif %}
+            </div>
+            <div style="display:flex; gap:0.4rem; flex-shrink:0;">
+              <form method="post" action="{% url 'respond-offer' offer.pk %}">
+                {% csrf_token %}<input type="hidden" name="action" value="accept">
+                <button type="submit" class="btn btn-primary" style="font-size:0.8rem; padding:0.35rem 0.8rem;">Accept</button>
+              </form>
+              <form method="post" action="{% url 'respond-offer' offer.pk %}">
+                {% csrf_token %}<input type="hidden" name="action" value="decline">
+                <button type="submit" class="btn btn-ghost" style="font-size:0.8rem; padding:0.35rem 0.8rem;">Decline</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
   <!-- Listings section -->
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
-    <h2 style="font-size: 1.2rem;">Your Listings</h2>
-    <span style="font-size: 0.85rem; color: var(--color-text-muted);">{{ user_listings|length }} listing{{ user_listings|length|pluralize }}</span>
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem;">
+    <h2 style="font-size:1.1rem;">Your Listings</h2>
+    <span style="font-size:0.85rem; color:var(--color-text-muted);">{{ user_listings|length }} listing{{ user_listings|length|pluralize }}</span>
   </div>
 
   {% if user_listings %}
     <div class="listing-grid">
       {% for listing in user_listings %}
-        <div class="listing-card" style="cursor: default;">
-          <a href="{% url 'listing-detail' listing.pk %}" style="text-decoration: none; color: inherit; display: contents;">
+        <div class="listing-card" style="cursor:default; position:relative;">
+
+          <!-- Status badge -->
+          {% if not listing.is_active %}
+            <span style="position:absolute; top:0.5rem; left:0.5rem; background:var(--color-danger); color:#fff; font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:var(--radius-full); font-weight:600; z-index:3;">SOLD</span>
+          {% elif listing.is_expired %}
+            <span style="position:absolute; top:0.5rem; left:0.5rem; background:var(--color-text-muted); color:#fff; font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:var(--radius-full); font-weight:600; z-index:3;">EXPIRED</span>
+          {% elif listing.bumped_at %}
+            <span style="position:absolute; top:0.5rem; left:0.5rem; background:var(--color-primary); color:#fff; font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:var(--radius-full); font-weight:600; z-index:3;">BUMPED</span>
+          {% endif %}
+
+          <a href="{% url 'listing-detail' listing.pk %}" style="text-decoration:none; color:inherit; display:contents;">
             <div class="listing-card__img-wrap">
               {% if listing.image %}
-                <img src="{{ listing.image.url }}"
-                     alt="{{ listing.title }}"
-                     class="listing-card__img"
-                     loading="lazy">
+                <img src="{{ listing.image.url }}" alt="{{ listing.title }}" class="listing-card__img" loading="lazy">
               {% else %}
-                <div class="listing-card__placeholder">
-                  <i class="fa-regular fa-image"></i>
-                </div>
+                <div class="listing-card__placeholder"><i class="fa-regular fa-image"></i></div>
               {% endif %}
             </div>
           </a>
@@ -77,14 +139,46 @@
             <div class="listing-card__price">${{ listing.price }}</div>
             <div class="listing-card__title">{{ listing.title }}</div>
 
-            <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+            <!-- Stats row -->
+            <div style="display:flex; gap:0.75rem; font-size:0.75rem; color:var(--color-text-muted); margin-top:0.35rem; flex-wrap:wrap;">
+              <span title="Views"><i class="fa-regular fa-eye"></i> {{ listing.view_count }}</span>
+              <span title="Saves"><i class="fa-regular fa-bookmark"></i> {{ listing.save_count }}</span>
+              {% if listing.pending_offer_count %}
+                <span style="color:var(--color-primary); font-weight:600;" title="Pending offers">
+                  <i class="fa-solid fa-tag"></i> {{ listing.pending_offer_count }} offer{{ listing.pending_offer_count|pluralize }}
+                </span>
+              {% endif %}
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex; gap:0.4rem; margin-top:0.75rem; flex-wrap:wrap;">
               <a href="{% url 'listing-update' listing.pk %}" class="btn btn-ghost"
-                 style="font-size: 0.78rem; padding: 0.35rem 0.75rem; flex: 1; justify-content: center;">
+                 style="font-size:0.75rem; padding:0.3rem 0.6rem; flex:1; justify-content:center; min-width:60px;">
                 <i class="fa-solid fa-pen-to-square"></i> Edit
               </a>
+
+              {% if listing.is_active %}
+                <form method="post" action="{% url 'listing-sold' listing.pk %}" style="flex:1;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost"
+                          style="font-size:0.75rem; padding:0.3rem 0.6rem; width:100%; justify-content:center; border-color:var(--color-success); color:var(--color-success);">
+                    <i class="fa-solid fa-circle-check"></i> Sold
+                  </button>
+                </form>
+
+                <form method="post" action="{% url 'listing-bump' listing.pk %}" style="flex:1;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost"
+                          style="font-size:0.75rem; padding:0.3rem 0.6rem; width:100%; justify-content:center;"
+                          {% if not listing.can_bump %}disabled title="Can bump once every 7 days"{% endif %}>
+                    <i class="fa-solid fa-arrow-up"></i> Bump
+                  </button>
+                </form>
+              {% endif %}
+
               <a href="{% url 'listing-delete' listing.pk %}" class="btn btn-danger"
-                 style="font-size: 0.78rem; padding: 0.35rem 0.75rem; flex: 1; justify-content: center;">
-                <i class="fa-solid fa-trash"></i> Delete
+                 style="font-size:0.75rem; padding:0.3rem 0.6rem; flex:1; justify-content:center; min-width:60px;">
+                <i class="fa-solid fa-trash"></i>
               </a>
             </div>
           </div>
@@ -94,9 +188,9 @@
 
   {% else %}
     <div class="empty-state">
-      <div style="font-size: 3rem; margin-bottom: 1rem;">🏷️</div>
+      <div style="font-size:3rem; margin-bottom:1rem;">🏷️</div>
       <h3>No listings yet</h3>
-      <p style="margin-bottom: 1.25rem;">Start selling — it only takes a few seconds.</p>
+      <p style="margin-bottom:1.25rem;">Start selling — it only takes a few seconds.</p>
       <a href="{% url 'listing-create' %}" class="btn btn-primary">
         <i class="fa-solid fa-plus"></i> Create Your First Listing
       </a>

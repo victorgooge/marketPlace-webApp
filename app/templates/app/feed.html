@@ -1,17 +1,42 @@
 {% extends "base.html" %}
-{% block title %}Explore — MarketPlace{% endblock %}
+{% block title %}{% if feed_label %}{{ feed_label }}{% else %}Explore{% endif %} — MarketPlace{% endblock %}
 
 {% block content %}
 <div class="container">
-  <div class="page-header">
-    <h1>Explore Listings</h1>
-    <p>Discover items listed by sellers near you.</p>
+
+  <!-- Feed header -->
+  <div class="page-header" style="margin-bottom: 1rem;">
+    <h1>{{ feed_label|default:"Explore" }}</h1>
+    <p style="color: var(--color-text-muted); font-size: 0.9rem;">
+      {% if feed_label == "For You" %}
+        Listings from sellers you follow and categories you save.
+      {% else %}
+        Discover the latest items listed on MarketPlace.
+      {% endif %}
+    </p>
   </div>
+
+  <!-- Category filter pills -->
+  {% if categories %}
+  <div class="category-pills" style="display:flex; flex-wrap:nowrap; overflow-x:auto; gap:0.5rem; padding-bottom:0.75rem; margin-bottom:1.5rem; -webkit-overflow-scrolling:touch; scrollbar-width:none;">
+    <a href="{% url 'feed' %}"
+       class="category-pill {% if not active_category %}active{% endif %}"
+       style="flex-shrink:0; padding:0.4rem 0.9rem; border-radius:var(--radius-full); font-size:0.82rem; font-weight:500; white-space:nowrap; text-decoration:none; border:1px solid {% if not active_category %}var(--color-primary){% else %}var(--color-border){% endif %}; background:{% if not active_category %}var(--color-primary){% else %}var(--color-surface){% endif %}; color:{% if not active_category %}#fff{% else %}var(--color-text){% endif %};">
+      All
+    </a>
+    {% for cat in categories %}
+    <a href="{% url 'feed' %}?category={{ cat.slug }}"
+       class="category-pill {% if active_category == cat %}active{% endif %}"
+       style="flex-shrink:0; padding:0.4rem 0.9rem; border-radius:var(--radius-full); font-size:0.82rem; font-weight:500; white-space:nowrap; text-decoration:none; border:1px solid {% if active_category == cat %}var(--color-primary){% else %}var(--color-border){% endif %}; background:{% if active_category == cat %}var(--color-primary){% else %}var(--color-surface){% endif %}; color:{% if active_category == cat %}#fff{% else %}var(--color-text){% endif %};">
+      {% if cat.icon %}<i class="fa-solid {{ cat.icon }}" style="margin-right:0.3rem;"></i>{% endif %}{{ cat.name }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
 
   {% if page_obj %}
     <div class="listing-grid">
       {% for listing in page_obj %}
-        {% with is_saved=listing.pk|stringformat:"i" %}
         <div class="listing-card-wrap" style="position: relative;">
 
           <!-- Bookmark button -->
@@ -26,6 +51,13 @@
             <a href="{% url 'login' %}" class="bookmark-btn" title="Log in to save">
               <i class="fa-regular fa-bookmark"></i>
             </a>
+          {% endif %}
+
+          <!-- Category badge -->
+          {% if listing.category %}
+            <span style="position:absolute; top:0.5rem; left:0.5rem; background:rgba(0,0,0,0.55); color:#fff; font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:var(--radius-full); pointer-events:none; z-index:2;">
+              {% if listing.category.icon %}<i class="fa-solid {{ listing.category.icon }}"></i> {% endif %}{{ listing.category.name }}
+            </span>
           {% endif %}
 
           <a href="{% url 'listing-detail' listing.pk %}" class="listing-card">
@@ -57,7 +89,6 @@
           </a>
 
         </div>
-        {% endwith %}
       {% endfor %}
     </div>
 
@@ -65,11 +96,11 @@
     {% if page_obj.paginator.num_pages > 1 %}
     <div class="pagination">
       {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}">&laquo; Prev</a>
+        <a href="?{% if category_slug %}category={{ category_slug }}&{% endif %}page={{ page_obj.previous_page_number }}">&laquo; Prev</a>
       {% endif %}
       <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
       {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">Next &raquo;</a>
+        <a href="?{% if category_slug %}category={{ category_slug }}&{% endif %}page={{ page_obj.next_page_number }}">Next &raquo;</a>
       {% endif %}
     </div>
     {% endif %}
@@ -77,9 +108,14 @@
   {% else %}
     <div class="empty-state">
       <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
-      <h3>No listings yet</h3>
-      <p>Be the first to <a href="{% url 'listing-create' %}">post a listing</a>.</p>
+      <h3>No listings {% if active_category %}in {{ active_category.name }}{% else %}yet{% endif %}</h3>
+      {% if not active_category %}
+        <p>Be the first to <a href="{% url 'listing-create' %}">post a listing</a>.</p>
+      {% else %}
+        <p><a href="{% url 'feed' %}">Browse all listings</a></p>
+      {% endif %}
     </div>
   {% endif %}
+
 </div>
 {% endblock %}

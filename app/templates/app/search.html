@@ -15,6 +15,20 @@
           <input type="hidden" name="q" value="{{ query }}">
         {% endif %}
 
+        <!-- Category -->
+        {% if categories %}
+        <div class="filter-group">
+          <label class="filter-label">Category</label>
+          <select name="category" onchange="document.getElementById('filter-form').submit()"
+                  style="width:100%; padding:0.45rem 0.6rem; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:0.85rem; background:var(--color-surface);">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+              <option value="{{ cat.slug }}" {% if category_slug == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
         <!-- Price range -->
         <div class="filter-group">
           <label class="filter-label">Price Range</label>
@@ -46,7 +60,7 @@
           <i class="fa-solid fa-sliders"></i> Apply
         </button>
 
-        {% if query or min_price or max_price or sort != 'newest' %}
+        {% if query or min_price or max_price or sort != 'newest' or category_slug %}
           <a href="{% url 'search' %}" class="btn btn-ghost"
              style="width: 100%; justify-content: center; margin-top: 0.5rem;">
             <i class="fa-solid fa-xmark"></i> Clear Filters

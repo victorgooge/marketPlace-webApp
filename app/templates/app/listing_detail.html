@@ -7,10 +7,18 @@
 
     <!-- Left: image + description -->
     <div>
+      {% if not listing.is_active %}
+        <div style="background:var(--color-danger); color:#fff; padding:0.6rem 1rem; border-radius:var(--radius-sm); margin-bottom:1rem; font-weight:600; display:flex; align-items:center; gap:0.5rem;">
+          <i class="fa-solid fa-circle-check"></i> This item has been sold
+        </div>
+      {% elif listing.is_expired %}
+        <div style="background:var(--color-text-muted); color:#fff; padding:0.6rem 1rem; border-radius:var(--radius-sm); margin-bottom:1rem; font-weight:600;">
+          <i class="fa-solid fa-clock"></i> This listing has expired
+        </div>
+      {% endif %}
+
       {% if listing.image %}
-        <img src="{{ listing.image.url }}"
-             alt="{{ listing.title }}"
-             class="listing-detail__img">
+        <img src="{{ listing.image.url }}" alt="{{ listing.title }}" class="listing-detail__img">
       {% else %}
         <div class="listing-detail__img-placeholder">
           <i class="fa-regular fa-image"></i>
@@ -19,35 +27,94 @@
 
       <div style="margin-top: 1.5rem;">
         <div style="display: flex; align-items: flex-start; gap: 1rem;">
-          <h1 class="listing-detail__title" style="flex: 1;">{{ listing.title }}</h1>
+          <div style="flex:1;">
+            {% if listing.category %}
+              <a href="{% url 'feed' %}?category={{ listing.category.slug }}"
+                 style="font-size:0.75rem; font-weight:600; color:var(--color-primary); text-decoration:none; margin-bottom:0.4rem; display:inline-block;">
+                <i class="fa-solid {{ listing.category.icon }}"></i> {{ listing.category.name }}
+              </a>
+            {% endif %}
+            <h1 class="listing-detail__title">{{ listing.title }}</h1>
+          </div>
           {% if user.is_authenticated and user != listing.owner %}
             <button class="bookmark-btn {% if is_saved %}saved{% endif %}"
                     id="detail-bookmark"
                     data-pk="{{ listing.pk }}"
                     data-url="{% url 'listing-save' listing.pk %}"
-                    style="position: static; flex-shrink: 0; width: 40px; height: 40px; font-size: 1rem;"
+                    style="position:static; flex-shrink:0; width:40px; height:40px; font-size:1rem;"
                     title="{% if is_saved %}Unsave{% else %}Save listing{% endif %}">
               <i class="{% if is_saved %}fa-solid{% else %}fa-regular{% endif %} fa-bookmark"></i>
             </button>
           {% endif %}
         </div>
+
         <div class="listing-detail__price">${{ listing.price }}</div>
         <p class="listing-detail__body">{{ listing.caption }}</p>
-        <p class="listing-detail__time">
-          <i class="fa-regular fa-clock"></i> Posted {{ listing.timestamp|timesince }} ago
+        <p class="listing-detail__time" style="display:flex; gap:1rem; flex-wrap:wrap;">
+          <span><i class="fa-regular fa-clock"></i> Posted {{ listing.timestamp|timesince }} ago</span>
+          <span style="color:var(--color-text-muted);"><i class="fa-regular fa-eye"></i> {{ view_count }} view{{ view_count|pluralize }}</span>
         </p>
       </div>
 
+      <!-- Pending offers (owner view) -->
+      {% if user == listing.owner and pending_offers %}
+        <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--color-border);">
+          <h3 style="font-size:0.95rem; margin-bottom:0.75rem;">
+            <i class="fa-solid fa-tag" style="color:var(--color-primary);"></i>
+            Pending Offers ({{ pending_offers|length }})
+          </h3>
+          <div style="display:flex; flex-direction:column; gap:0.6rem;">
+            {% for offer in pending_offers %}
+              <div style="background:var(--color-surface-alt); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:0.75rem 1rem; display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                <img src="{{ offer.buyer.profile.profile_picture.url }}" alt="{{ offer.buyer.username }}"
+                     style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+                <div style="flex:1;">
+                  <strong>{{ offer.buyer.username }}</strong> offered
+                  <strong style="color:var(--color-primary);">${{ offer.amount }}</strong>
+                  {% if offer.message %}<br><span style="font-size:0.82rem; color:var(--color-text-muted);">{{ offer.message }}</span>{% endif %}
+                </div>
+                <div style="display:flex; gap:0.4rem;">
+                  <form method="post" action="{% url 'respond-offer' offer.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="accept">
+                    <button type="submit" class="btn btn-primary" style="font-size:0.78rem; padding:0.3rem 0.7rem;">Accept</button>
+                  </form>
+                  <form method="post" action="{% url 'respond-offer' offer.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="decline">
+                    <button type="submit" class="btn btn-ghost" style="font-size:0.78rem; padding:0.3rem 0.7rem;">Decline</button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
       <!-- Owner controls -->
       {% if user == listing.owner %}
-      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);">
-        <a href="{% url 'listing-update' listing.pk %}" class="btn btn-outline">
-          <i class="fa-solid fa-pen-to-square"></i> Edit Listing
-        </a>
-        <a href="{% url 'listing-delete' listing.pk %}" class="btn btn-danger">
-          <i class="fa-solid fa-trash"></i> Delete
-        </a>
-      </div>
+        <div style="display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--color-border);">
+          <a href="{% url 'listing-update' listing.pk %}" class="btn btn-outline">
+            <i class="fa-solid fa-pen-to-square"></i> Edit
+          </a>
+          {% if listing.is_active %}
+            <form method="post" action="{% url 'listing-sold' listing.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline" style="border-color:var(--color-success); color:var(--color-success);">
+                <i class="fa-solid fa-circle-check"></i> Mark as Sold
+              </button>
+            </form>
+            <form method="post" action="{% url 'listing-bump' listing.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline" {% if not listing.can_bump %}disabled title="Can bump once every 7 days"{% endif %}>
+                <i class="fa-solid fa-arrow-up"></i> Bump
+              </button>
+            </form>
+          {% endif %}
+          <a href="{% url 'listing-delete' listing.pk %}" class="btn btn-danger">
+            <i class="fa-solid fa-trash"></i> Delete
+          </a>
+        </div>
       {% endif %}
     </div>
 
@@ -57,11 +124,14 @@
         <div class="seller-card__header">
           <a href="{% url 'public-profile' listing.owner.username %}"
              style="text-decoration:none; display:flex; align-items:center; gap:0.75rem; flex:1;">
-            <img src="{{ profile.profile_picture.url }}"
-                 alt="{{ listing.owner.username }}"
-                 class="seller-card__avatar">
+            <img src="{{ profile.profile_picture.url }}" alt="{{ listing.owner.username }}" class="seller-card__avatar">
             <div>
-              <div class="seller-card__name">{{ listing.owner.username }}</div>
+              <div class="seller-card__name">
+                {{ listing.owner.username }}
+                {% if profile.is_verified_seller %}
+                  <i class="fa-solid fa-circle-check" title="Verified Seller" style="color:var(--color-primary); font-size:0.8rem;"></i>
+                {% endif %}
+              </div>
               {% if profile.location %}
                 <div class="seller-card__sub">
                   <i class="fa-solid fa-location-dot" style="font-size:0.75rem;"></i> {{ profile.location }}
@@ -71,38 +141,80 @@
           </a>
         </div>
 
-        <!-- Follower count -->
         <p style="font-size:0.8rem; color:var(--color-text-muted);">
-          <span id="seller-follower-count">{{ follower_count }}</span>
-          follower{{ follower_count|pluralize }}
+          <span id="seller-follower-count">{{ follower_count }}</span> follower{{ follower_count|pluralize }}
+          {% if seller_avg_rating %}
+            &nbsp;·&nbsp;
+            <i class="fa-solid fa-star" style="color:var(--color-warning);"></i>
+            {{ seller_avg_rating|floatformat:1 }} ({{ seller_review_count }})
+          {% endif %}
         </p>
 
         {% if profile.about %}
-          <p style="font-size: 0.85rem; color: var(--color-text-muted);">{{ profile.about }}</p>
+          <p style="font-size:0.85rem; color:var(--color-text-muted);">{{ profile.about }}</p>
         {% endif %}
 
-        <!-- Follow button (hidden for own listings) -->
         {% if user.is_authenticated and user != listing.owner %}
+          <!-- Follow -->
           <button class="btn follow-btn {% if is_following %}follow-btn--following{% endif %}"
                   style="width:100%; justify-content:center;"
                   data-url="{% url 'follow-toggle' listing.owner.username %}"
                   data-counter="#seller-follower-count"
                   data-username="{{ listing.owner.username }}">
-            {% if is_following %}
-              <i class="fa-solid fa-user-minus"></i> Following
-            {% else %}
-              <i class="fa-solid fa-user-plus"></i> Follow
-            {% endif %}
+            {% if is_following %}<i class="fa-solid fa-user-minus"></i> Following
+            {% else %}<i class="fa-solid fa-user-plus"></i> Follow{% endif %}
           </button>
-        {% endif %}
 
-        {% if user.is_authenticated and user != listing.owner %}
-          <a href="{% url 'start-conversation' listing.pk %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
+          <!-- Message -->
+          <a href="{% url 'start-conversation' listing.pk %}" class="btn btn-primary" style="width:100%; justify-content:center;">
             <i class="fa-solid fa-comment"></i> Message Seller
           </a>
+
+          {% if listing.is_active %}
+            <!-- Price alert toggle -->
+            <button class="btn btn-ghost price-alert-btn"
+                    id="price-alert-btn"
+                    data-url="{% url 'toggle-price-alert' listing.pk %}"
+                    style="width:100%; justify-content:center;"
+                    title="Get notified if the price drops">
+              {% if has_alert %}
+                <i class="fa-solid fa-bell" style="color:var(--color-warning);"></i> Alert On
+              {% else %}
+                <i class="fa-regular fa-bell"></i> Price Drop Alert
+              {% endif %}
+            </button>
+
+            <!-- Make offer -->
+            {% if not existing_offer %}
+              <button class="btn btn-outline" id="offer-toggle-btn" style="width:100%; justify-content:center;">
+                <i class="fa-solid fa-tag"></i> Make an Offer
+              </button>
+              <div id="offer-form" style="display:none; margin-top:0.5rem;">
+                <form method="post" action="{% url 'make-offer' listing.pk %}">
+                  {% csrf_token %}
+                  <div style="display:flex; gap:0.4rem; align-items:center; margin-bottom:0.4rem;">
+                    <span style="font-size:0.9rem; font-weight:700;">$</span>
+                    <input type="number" name="amount" placeholder="Your offer" min="1" step="0.01"
+                           style="flex:1; padding:0.5rem 0.6rem; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:0.9rem;">
+                  </div>
+                  <textarea name="message" rows="2" placeholder="Add a message (optional)"
+                            style="width:100%; padding:0.5rem 0.6rem; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-size:0.85rem; resize:none; box-sizing:border-box; margin-bottom:0.4rem;"></textarea>
+                  <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
+                    Send Offer
+                  </button>
+                </form>
+              </div>
+            {% else %}
+              <div style="background:var(--color-surface-alt); border-radius:var(--radius-sm); padding:0.6rem 0.75rem; font-size:0.85rem; text-align:center;">
+                <i class="fa-solid fa-tag" style="color:var(--color-primary);"></i>
+                Your offer: <strong>${{ existing_offer.amount }}</strong>
+                <span style="color:var(--color-text-muted);">[{{ existing_offer.get_status_display }}]</span>
+              </div>
+            {% endif %}
+          {% endif %}
         {% endif %}
 
-        <a href="{% url 'feed' %}" class="btn btn-ghost" style="width: 100%; justify-content: center;">
+        <a href="{% url 'feed' %}" class="btn btn-ghost" style="width:100%; justify-content:center;">
           <i class="fa-solid fa-arrow-left"></i> Back to Explore
         </a>
       </div>
@@ -110,4 +222,36 @@
 
   </div>
 </div>
+
+<script>
+// Offer form toggle
+var offerToggle = document.getElementById('offer-toggle-btn');
+var offerForm   = document.getElementById('offer-form');
+if (offerToggle && offerForm) {
+  offerToggle.addEventListener('click', function () {
+    var open = offerForm.style.display !== 'none';
+    offerForm.style.display = open ? 'none' : 'block';
+    offerToggle.style.display = open ? '' : 'none';
+  });
+}
+
+// Price alert AJAX toggle
+var alertBtn = document.getElementById('price-alert-btn');
+if (alertBtn) {
+  alertBtn.addEventListener('click', function () {
+    fetch(alertBtn.dataset.url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content },
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.active) {
+        alertBtn.innerHTML = '<i class="fa-solid fa-bell" style="color:var(--color-warning);"></i> Alert On';
+      } else {
+        alertBtn.innerHTML = '<i class="fa-regular fa-bell"></i> Price Drop Alert';
+      }
+    });
+  });
+}
+</script>
 {% endblock %}

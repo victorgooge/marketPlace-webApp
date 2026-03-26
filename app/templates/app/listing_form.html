@@ -27,6 +27,14 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label" for="{{ form.category.id_for_label }}">Category</label>
+          {{ form.category }}
+          {% if form.category.errors %}
+            <p class="form-error">{{ form.category.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
           <label class="form-label" for="{{ form.price.id_for_label }}">Price ($)</label>
           {{ form.price }}
           {% if form.price.errors %}

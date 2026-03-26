@@ -1,12 +1,13 @@
 from django import forms
-from .models import Listing
+from .models import Listing, Category
 
 class ListingForm(forms.ModelForm):
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        empty_label='— Select a category —',
+    )
+
     class Meta:
         model = Listing
-        fields = [
-            'title', 
-            'image', 
-            'price', 
-            'caption'
-        ]
+        fields = ['title', 'category', 'price', 'caption', 'image']

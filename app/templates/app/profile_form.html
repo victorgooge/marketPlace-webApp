@@ -3,7 +3,7 @@
 
 {% block content %}
 <div style="display: flex; justify-content: center; padding: 2.5rem 1rem;">
-  <div style="width: 100%; max-width: 480px;">
+  <div style="width: 100%; max-width: 540px;">
 
     <div style="margin-bottom: 1.75rem;">
       <h1 style="font-size: 1.6rem;">Edit Profile</h1>
@@ -14,12 +14,13 @@
       <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
 
+        <!-- Profile picture -->
         <div class="form-group">
           <label class="form-label" for="{{ form.profile_picture.id_for_label }}">Profile Photo</label>
           {% if object.profile_picture %}
             <img src="{{ object.profile_picture.url }}"
                  alt="Current photo"
-                 style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-border); margin-bottom: 0.75rem;">
+                 style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--color-border); margin-bottom: 0.75rem; display:block;">
           {% endif %}
           {{ form.profile_picture }}
           {% if form.profile_picture.errors %}
@@ -27,6 +28,22 @@
           {% endif %}
         </div>
 
+        <!-- Cover photo -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.cover_photo.id_for_label }}">Cover Photo</label>
+          {% if object.cover_photo %}
+            <img src="{{ object.cover_photo.url }}"
+                 alt="Current cover"
+                 style="width: 100%; height: 100px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--color-border); margin-bottom: 0.75rem; display:block;">
+          {% endif %}
+          {{ form.cover_photo }}
+          <p class="form-hint">Displayed as a banner at the top of your profile page.</p>
+          {% if form.cover_photo.errors %}
+            <p class="form-error">{{ form.cover_photo.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Location -->
         <div class="form-group">
           <label class="form-label" for="{{ form.location.id_for_label }}">Location</label>
           {{ form.location }}
@@ -35,6 +52,17 @@
           {% endif %}
         </div>
 
+        <!-- Website -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.website.id_for_label }}">Website</label>
+          {{ form.website }}
+          <p class="form-hint">Optional — include https://</p>
+          {% if form.website.errors %}
+            <p class="form-error">{{ form.website.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <!-- About -->
         <div class="form-group">
           <label class="form-label" for="{{ form.about.id_for_label }}">About</label>
           {{ form.about }}
@@ -43,6 +71,10 @@
             <p class="form-error">{{ form.about.errors|join:", " }}</p>
           {% endif %}
         </div>
+
+        {% if form.non_field_errors %}
+          <p class="form-error" style="margin-bottom: 1rem;">{{ form.non_field_errors|join:", " }}</p>
+        {% endif %}
 
         <input type="submit" value="Save Profile">
       </form>

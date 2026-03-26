@@ -4,28 +4,39 @@
 {% block content %}
 <div class="container" style="padding-top: 2rem; padding-bottom: 3rem;">
 
+  <!-- Cover photo -->
+  <div style="width:100%; height:180px; border-radius:var(--radius-md); overflow:hidden; background:var(--color-surface-alt); margin-bottom: -52px; position:relative;">
+    {% if profile.cover_photo %}
+      <img src="{{ profile.cover_photo.url }}" alt="Cover" style="width:100%; height:100%; object-fit:cover;">
+    {% else %}
+      <div style="width:100%; height:100%; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);"></div>
+    {% endif %}
+  </div>
+
   <!-- Profile header -->
-  <div class="profile-header">
+  <div class="profile-header" style="padding-top: 0; align-items: flex-end; position:relative; z-index:1;">
     <img src="{{ profile.profile_picture.url }}"
          alt="{{ profile_user.username }}"
-         class="profile-avatar">
+         class="profile-avatar"
+         style="border: 4px solid var(--color-surface); margin-top: 0;">
 
-    <div class="profile-info">
-      <h2>{{ profile_user.username }}
-        {% if profile_user.profile.is_verified_seller %}
-          <span class="badge badge-primary" style="font-size: 0.7rem; vertical-align: middle;">
-            <i class="fa-solid fa-circle-check"></i> Verified
+    <div class="profile-info" style="padding-top: 0.5rem;">
+      <h2 style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        {{ profile_user.username }}
+        {% if profile.is_verified_seller %}
+          <span title="Verified Seller" style="color:var(--color-primary); font-size:1rem;">
+            <i class="fa-solid fa-circle-check"></i>
           </span>
+          <span style="font-size:0.7rem; background:var(--color-primary); color:#fff; padding:0.15rem 0.5rem; border-radius:var(--radius-full); font-weight:600;">Verified Seller</span>
         {% endif %}
       </h2>
       {% if profile_user.first_name or profile_user.last_name %}
-        <p>{{ profile_user.first_name }} {{ profile_user.last_name }}</p>
+        <p style="color:var(--color-text-muted); font-size:0.9rem;">{{ profile_user.first_name }} {{ profile_user.last_name }}</p>
       {% endif %}
       {% if profile.location %}
-        <p><i class="fa-solid fa-location-dot" style="font-size:0.8rem;"></i> {{ profile.location }}</p>
-      {% endif %}
-      {% if profile.about %}
-        <p style="margin-top: 0.4rem; color: var(--color-text);">{{ profile.about }}</p>
+        <p style="font-size:0.85rem; color:var(--color-text-muted);">
+          <i class="fa-solid fa-location-dot" style="font-size:0.8rem;"></i> {{ profile.location }}
+        </p>
       {% endif %}
 
       <!-- Stats bar -->
@@ -42,6 +53,15 @@
           <span class="profile-stat__num">{{ listings|length }}</span>
           <span class="profile-stat__label">Listings</span>
         </div>
+        {% if profile_user.avg_rating %}
+        <div class="profile-stat">
+          <span class="profile-stat__num">
+            <i class="fa-solid fa-star" style="color:var(--color-warning); font-size:0.85em;"></i>
+            {{ profile_user.avg_rating|floatformat:1 }}
+          </span>
+          <span class="profile-stat__label">{{ profile_user.review_count }} Review{{ profile_user.review_count|pluralize }}</span>
+        </div>
+        {% endif %}
       </div>
     </div>
 
@@ -64,49 +84,281 @@
     </div>
   </div>
 
-  <!-- Listings grid -->
-  <h2 style="font-size: 1.2rem; margin-bottom: 1.25rem;">
-    {{ profile_user.username }}'s Listings
-  </h2>
+  <!-- Tab navigation -->
+  <div class="profile-tabs" style="display:flex; gap:0; border-bottom: 2px solid var(--color-border); margin-bottom: 1.75rem; margin-top: 1rem;">
+    <button class="profile-tab active" data-tab="listings"
+            style="padding:0.75rem 1.25rem; background:none; border:none; border-bottom:2px solid var(--color-primary); cursor:pointer; font-weight:600; color:var(--color-primary); margin-bottom:-2px;">
+      <i class="fa-solid fa-tag"></i> Listings
+    </button>
+    <button class="profile-tab" data-tab="reviews"
+            style="padding:0.75rem 1.25rem; background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; font-weight:600; color:var(--color-text-muted); margin-bottom:-2px;">
+      <i class="fa-solid fa-star"></i> Reviews
+      {% if profile_user.review_count %}<span style="font-size:0.8rem;">({{ profile_user.review_count }})</span>{% endif %}
+    </button>
+    <button class="profile-tab" data-tab="about"
+            style="padding:0.75rem 1.25rem; background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; font-weight:600; color:var(--color-text-muted); margin-bottom:-2px;">
+      <i class="fa-solid fa-circle-info"></i> About
+    </button>
+  </div>
 
-  {% if listings %}
-    <div class="listing-grid">
-      {% for listing in listings %}
-        <div class="listing-card-wrap">
-          {% if user.is_authenticated %}
-            <button class="bookmark-btn"
-                    data-pk="{{ listing.pk }}"
-                    data-url="{% url 'listing-save' listing.pk %}"
-                    title="Save">
-              <i class="fa-regular fa-bookmark"></i>
-            </button>
-          {% endif %}
-          <a href="{% url 'listing-detail' listing.pk %}" class="listing-card">
-            <div class="listing-card__img-wrap">
-              {% if listing.image %}
-                <img src="{{ listing.image.url }}" alt="{{ listing.title }}"
-                     class="listing-card__img" loading="lazy">
-              {% else %}
-                <div class="listing-card__placeholder"><i class="fa-regular fa-image"></i></div>
-              {% endif %}
-            </div>
-            <div class="listing-card__body">
-              <div class="listing-card__price">${{ listing.price }}</div>
-              <div class="listing-card__title">{{ listing.title }}</div>
-              <div class="listing-card__meta">
-                <span class="listing-card__time">{{ listing.timestamp|timesince }} ago</span>
+  <!-- ── TAB: Listings ── -->
+  <div class="tab-panel" id="tab-listings">
+    {% if listings %}
+      <div class="listing-grid">
+        {% for listing in listings %}
+          <div class="listing-card-wrap">
+            {% if user.is_authenticated %}
+              <button class="bookmark-btn"
+                      data-pk="{{ listing.pk }}"
+                      data-url="{% url 'listing-save' listing.pk %}"
+                      title="Save">
+                <i class="fa-regular fa-bookmark"></i>
+              </button>
+            {% endif %}
+            {% if listing.category %}
+              <span style="position:absolute; top:0.5rem; left:0.5rem; background:rgba(0,0,0,0.55); color:#fff; font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:var(--radius-full); pointer-events:none; z-index:2;">
+                {% if listing.category.icon %}<i class="fa-solid {{ listing.category.icon }}"></i> {% endif %}{{ listing.category.name }}
+              </span>
+            {% endif %}
+            <a href="{% url 'listing-detail' listing.pk %}" class="listing-card">
+              <div class="listing-card__img-wrap">
+                {% if listing.image %}
+                  <img src="{{ listing.image.url }}" alt="{{ listing.title }}"
+                       class="listing-card__img" loading="lazy">
+                {% else %}
+                  <div class="listing-card__placeholder"><i class="fa-regular fa-image"></i></div>
+                {% endif %}
               </div>
-            </div>
-          </a>
+              <div class="listing-card__body">
+                <div class="listing-card__price">${{ listing.price }}</div>
+                <div class="listing-card__title">{{ listing.title }}</div>
+                <div class="listing-card__meta">
+                  <span class="listing-card__time">{{ listing.timestamp|timesince }} ago</span>
+                </div>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div style="font-size:3rem; margin-bottom:1rem;">🏷️</div>
+        <h3>No listings yet</h3>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- ── TAB: Reviews ── -->
+  <div class="tab-panel" id="tab-reviews" style="display:none;">
+
+    {% if can_review %}
+    <div class="review-form-card" style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); padding:1.5rem; margin-bottom:2rem; max-width:560px;">
+      <h3 style="margin-bottom:1rem; font-size:1rem;">Leave a Review for {{ profile_user.username }}</h3>
+      <form method="post" action="{% url 'create-review' profile_user.username %}">
+        {% csrf_token %}
+        <div class="star-rating" style="display:flex; flex-direction:row-reverse; justify-content:flex-end; gap:0.25rem; margin-bottom:1rem;">
+          {% for i in "54321" %}
+          <label style="cursor:pointer; font-size:1.75rem; color:var(--color-border);">
+            <input type="radio" name="rating" value="{{ i }}" style="display:none;" required>
+            <i class="fa-solid fa-star star-icon" data-val="{{ i }}"></i>
+          </label>
+          {% endfor %}
         </div>
+        <textarea name="body" rows="3" placeholder="Share your experience (optional)"
+                  style="width:100%; padding:0.75rem; border:1px solid var(--color-border); border-radius:var(--radius-sm); font-family:inherit; font-size:0.9rem; resize:vertical; box-sizing:border-box;"></textarea>
+        <button type="submit" class="btn btn-primary" style="margin-top:0.75rem;">
+          <i class="fa-solid fa-paper-plane"></i> Submit Review
+        </button>
+      </form>
+    </div>
+    {% elif existing_review %}
+    <div style="background:var(--color-surface-alt); border-radius:var(--radius-sm); padding:0.75rem 1rem; margin-bottom:1.5rem; font-size:0.9rem; color:var(--color-text-muted); max-width:560px;">
+      <i class="fa-solid fa-circle-check" style="color:var(--color-success);"></i>
+      You reviewed {{ profile_user.username }}
+      {% for i in "12345" %}
+        {% if forloop.counter <= existing_review.rating %}
+          <i class="fa-solid fa-star" style="color:var(--color-warning);"></i>
+        {% else %}
+          <i class="fa-regular fa-star" style="color:var(--color-border);"></i>
+        {% endif %}
       {% endfor %}
     </div>
-  {% else %}
-    <div class="empty-state">
-      <div style="font-size: 3rem; margin-bottom: 1rem;">🏷️</div>
-      <h3>No listings yet</h3>
+    {% endif %}
+
+    {% if reviews %}
+      <div style="display:flex; flex-direction:column; gap:1rem; max-width:680px;">
+        {% for review in reviews %}
+        <div style="background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); padding:1.25rem;">
+          <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+            <img src="{{ review.reviewer.profile.profile_picture.url }}"
+                 alt="{{ review.reviewer.username }}"
+                 style="width:36px; height:36px; border-radius:50%; object-fit:cover;">
+            <div>
+              <a href="{% url 'public-profile' review.reviewer.username %}"
+                 style="font-weight:600; font-size:0.9rem; color:var(--color-text); text-decoration:none;">
+                {{ review.reviewer.username }}
+              </a>
+              {% if review.reviewer.profile.is_verified_seller %}
+                <i class="fa-solid fa-circle-check" style="color:var(--color-primary); font-size:0.75rem;"></i>
+              {% endif %}
+              <div style="font-size:0.75rem; color:var(--color-text-muted);">{{ review.created_at|timesince }} ago</div>
+            </div>
+            <div style="margin-left:auto;">
+              {% for i in "12345" %}
+                {% if forloop.counter <= review.rating %}
+                  <i class="fa-solid fa-star" style="color:var(--color-warning); font-size:0.85rem;"></i>
+                {% else %}
+                  <i class="fa-regular fa-star" style="color:var(--color-border); font-size:0.85rem;"></i>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          {% if review.body %}
+            <p style="font-size:0.9rem; color:var(--color-text); margin:0;">{{ review.body }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div style="font-size:3rem; margin-bottom:1rem;">⭐</div>
+        <h3>No reviews yet</h3>
+        <p style="color:var(--color-text-muted); font-size:0.9rem;">Reviews from buyers who have messaged this seller will appear here.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- ── TAB: About ── -->
+  <div class="tab-panel" id="tab-about" style="display:none;">
+    <div style="max-width:560px; display:flex; flex-direction:column; gap:1.25rem;">
+
+      {% if profile.about %}
+      <div>
+        <h3 style="font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--color-text-muted); margin-bottom:0.5rem;">Bio</h3>
+        <p style="font-size:0.95rem; line-height:1.7; color:var(--color-text);">{{ profile.about }}</p>
+      </div>
+      {% endif %}
+
+      <div style="display:flex; flex-direction:column; gap:0.6rem;">
+        {% if profile.location %}
+        <div style="display:flex; align-items:center; gap:0.6rem; font-size:0.9rem; color:var(--color-text);">
+          <i class="fa-solid fa-location-dot" style="width:18px; color:var(--color-text-muted);"></i>
+          {{ profile.location }}
+        </div>
+        {% endif %}
+
+        {% if profile.website %}
+        <div style="display:flex; align-items:center; gap:0.6rem; font-size:0.9rem;">
+          <i class="fa-solid fa-link" style="width:18px; color:var(--color-text-muted);"></i>
+          <a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer"
+             style="color:var(--color-primary); word-break:break-all;">{{ profile.website }}</a>
+        </div>
+        {% endif %}
+
+        <div style="display:flex; align-items:center; gap:0.6rem; font-size:0.9rem; color:var(--color-text);">
+          <i class="fa-regular fa-calendar" style="width:18px; color:var(--color-text-muted);"></i>
+          Joined {{ profile_user.date_joined|date:"F Y" }}
+        </div>
+
+        {% if profile.is_verified_seller %}
+        <div style="display:flex; align-items:center; gap:0.6rem; font-size:0.9rem; color:var(--color-primary);">
+          <i class="fa-solid fa-circle-check" style="width:18px;"></i>
+          Verified Seller
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Response stats (only shown if data exists) -->
+      {% if profile.response_rate or profile.avg_response_time %}
+      <div style="background:var(--color-surface-alt); border-radius:var(--radius-md); padding:1rem 1.25rem; display:flex; gap:2rem; flex-wrap:wrap;">
+        {% if profile.response_rate %}
+        <div>
+          <div style="font-size:1.1rem; font-weight:700; color:var(--color-text);">{{ profile.response_rate|floatformat:0 }}%</div>
+          <div style="font-size:0.78rem; color:var(--color-text-muted);">Response Rate</div>
+        </div>
+        {% endif %}
+        {% if profile.avg_response_time %}
+        <div>
+          <div style="font-size:1.1rem; font-weight:700; color:var(--color-text);">{{ profile.avg_response_time }}</div>
+          <div style="font-size:0.78rem; color:var(--color-text-muted);">Avg. Response Time</div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if not profile.about and not profile.location and not profile.website %}
+      <div class="empty-state" style="padding: 2rem 0;">
+        <div style="font-size:2.5rem; margin-bottom:0.75rem;">📋</div>
+        <h3>No details yet</h3>
+        {% if user == profile_user %}
+          <p style="font-size:0.9rem; color:var(--color-text-muted);">
+            <a href="{% url 'profile-update' profile.pk %}">Edit your profile</a> to add a bio, location, and website.
+          </p>
+        {% endif %}
+      </div>
+      {% endif %}
+
     </div>
-  {% endif %}
+  </div>
 
 </div>
+
+<script>
+(function () {
+  var tabs   = document.querySelectorAll('.profile-tab');
+  var panels = document.querySelectorAll('.tab-panel');
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      tabs.forEach(function (t) {
+        t.style.borderBottomColor = 'transparent';
+        t.style.color = 'var(--color-text-muted)';
+        t.classList.remove('active');
+      });
+      panels.forEach(function (p) { p.style.display = 'none'; });
+
+      tab.style.borderBottomColor = 'var(--color-primary)';
+      tab.style.color = 'var(--color-primary)';
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).style.display = '';
+    });
+  });
+
+  // Star rating picker
+  var labels = document.querySelectorAll('.star-rating label');
+  labels.forEach(function (label) {
+    var input = label.querySelector('input');
+    var icon  = label.querySelector('.star-icon');
+
+    label.addEventListener('mouseenter', function () {
+      var val = parseInt(icon.dataset.val);
+      labels.forEach(function (l) {
+        var v = parseInt(l.querySelector('.star-icon').dataset.val);
+        l.querySelector('.star-icon').style.color = v <= val ? 'var(--color-warning)' : 'var(--color-border)';
+      });
+    });
+
+    label.addEventListener('click', function () {
+      input.checked = true;
+      var val = parseInt(icon.dataset.val);
+      labels.forEach(function (l) {
+        var v = parseInt(l.querySelector('.star-icon').dataset.val);
+        l.querySelector('.star-icon').style.color = v <= val ? 'var(--color-warning)' : 'var(--color-border)';
+      });
+    });
+  });
+
+  var container = document.querySelector('.star-rating');
+  if (container) {
+    container.addEventListener('mouseleave', function () {
+      var checked  = container.querySelector('input:checked');
+      var selected = checked ? parseInt(checked.value) : 0;
+      labels.forEach(function (l) {
+        var v = parseInt(l.querySelector('.star-icon').dataset.val);
+        l.querySelector('.star-icon').style.color = v <= selected ? 'var(--color-warning)' : 'var(--color-border)';
+      });
+    });
+  }
+})();
+</script>
 {% endblock %}
